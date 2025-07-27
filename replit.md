@@ -1,8 +1,8 @@
-# NSE Share Tokenization Platform
+# Tokenized Share Platform
 
 ## Overview
 
-This is a full-stack web application for tokenizing NSE (National Stock Exchange) listed shares. The platform allows users to convert their physical shares into digital tokens and vice versa, enabling enhanced liquidity and seamless trading of tokenized assets. Built with Express.js backend, React frontend, PostgreSQL database with Drizzle ORM, and integrated with Replit authentication.
+This is a full-stack web application for tokenizing NSE (National Stock Exchange) listed shares. The platform "Tokenized Share" with tagline "Share Tokenization and Trading Platform" allows users to convert their physical shares into digital tokens and vice versa, enabling enhanced liquidity and seamless trading of tokenized assets. Built with Express.js backend, React frontend, PostgreSQL database with Drizzle ORM, and integrated with Replit authentication.
 
 ## User Preferences
 

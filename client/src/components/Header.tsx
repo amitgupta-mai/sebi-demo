@@ -24,8 +24,8 @@ export default function Header() {
                 <Coins className="text-white text-lg" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">NSE Tokenization Platform</h1>
-                <p className="text-sm text-gray-500">Professional Share Trading & Tokenization</p>
+                <h1 className="text-xl font-bold text-gray-900">Tokenized Share</h1>
+                <p className="text-sm text-gray-500">Share Tokenization and Trading Platform</p>
               </div>
             </div>
           </div>
