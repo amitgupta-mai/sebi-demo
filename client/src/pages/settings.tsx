@@ -52,7 +52,7 @@ export default function Settings() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid grid-cols-7 gap-4 h-auto p-1 bg-white rounded-lg shadow-sm">
+            <TabsList className="grid grid-cols-5 gap-4 h-auto p-1 bg-white rounded-lg shadow-sm">
               <TabsTrigger value="profile" className="flex items-center space-x-2 p-3">
                 <User className="h-4 w-4" />
                 <span>Profile</span>
@@ -61,14 +61,15 @@ export default function Settings() {
                 <Shield className="h-4 w-4" />
                 <span>Security</span>
               </TabsTrigger>
-              <TabsTrigger value="api" className="flex items-center space-x-2 p-3">
+              {/* Hidden for now - can be enabled later */}
+              {/* <TabsTrigger value="api" className="flex items-center space-x-2 p-3">
                 <Key className="h-4 w-4" />
                 <span>API Keys</span>
               </TabsTrigger>
               <TabsTrigger value="payment" className="flex items-center space-x-2 p-3">
                 <CreditCard className="h-4 w-4" />
                 <span>Payment</span>
-              </TabsTrigger>
+              </TabsTrigger> */}
               <TabsTrigger value="appearance" className="flex items-center space-x-2 p-3">
                 <Eye className="h-4 w-4" />
                 <span>Appearance</span>
@@ -210,8 +211,9 @@ export default function Settings() {
               </div>
             </TabsContent>
 
+            {/* Hidden for now - can be enabled later */}
             {/* API Keys Tab */}
-            <TabsContent value="api">
+            {/* <TabsContent value="api">
               <Card>
                 <CardHeader>
                   <CardTitle>API Keys Management</CardTitle>
@@ -250,10 +252,10 @@ export default function Settings() {
                   <Button className="w-full">Generate New API Key</Button>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </TabsContent> */}
 
             {/* Payment Methods Tab */}
-            <TabsContent value="payment">
+            {/* <TabsContent value="payment">
               <Card>
                 <CardHeader>
                   <CardTitle>Payment Methods</CardTitle>
@@ -290,7 +292,7 @@ export default function Settings() {
                   <Button className="w-full">Add Payment Method</Button>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </TabsContent> */}
 
             {/* Appearance Tab */}
             <TabsContent value="appearance">

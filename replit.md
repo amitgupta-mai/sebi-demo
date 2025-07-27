@@ -136,3 +136,6 @@ The application follows a monorepo structure with clear separation between front
   - Meta title: "Tokenized Share | Kalp Studio"
   - Meta description: "TokniFy is Share Tokenization Platform developed by Kalp Studio"
   - Open Graph and Twitter Card tags for social media sharing
+- Hidden API Keys and Payment tabs in settings menu (commented out for future enablement)
+  - Updated settings layout from 7 tabs to 5 tabs
+  - Preserved code for easy re-activation when needed
