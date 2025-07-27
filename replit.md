@@ -126,3 +126,13 @@ Preferred communication style: Simple, everyday language.
 - `migrations/`: Database migration files
 
 The application follows a monorepo structure with clear separation between frontend, backend, and shared code, enabling efficient development and deployment workflows.
+
+## Recent Changes
+
+### January 27, 2025
+- Fixed React component errors (missing DropdownMenuSeparator import in Header component)
+- Fixed nested anchor tag warnings in Sidebar navigation by replacing `<a>` tags with `<span>` elements
+- Added comprehensive meta tags for SEO optimization:
+  - Meta title: "Tokenized Share | Kalp Studio"
+  - Meta description: "TokniFy is Share Tokenization Platform developed by Kalp Studio"
+  - Open Graph and Twitter Card tags for social media sharing
