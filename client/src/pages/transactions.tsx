@@ -1,8 +1,5 @@
-import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { useState } from "react";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,56 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, Filter, Search, Download, Coins, ArrowRightLeft, Undo2, ShoppingCart, History } from "lucide-react";
 
 export default function Transactions() {
-  const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("date");
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
-
-  const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useQuery({
+  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
     queryKey: ["/api/transactions"],
-    enabled: isAuthenticated,
   });
 
-  const { data: orders, isLoading: ordersLoading, error: ordersError } = useQuery({
+  const { data: orders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ["/api/orders"],
-    enabled: isAuthenticated,
   });
-
-  useEffect(() => {
-    const errors = [transactionsError, ordersError];
-    for (const error of errors) {
-      if (error && isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    }
-  }, [transactionsError, ordersError, toast]);
-
-  if (!isAuthenticated || isLoading) {
-    return <div>Loading...</div>;
-  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {

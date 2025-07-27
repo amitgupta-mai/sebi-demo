@@ -1,8 +1,6 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
@@ -16,33 +14,16 @@ import { Coins, Calculator, AlertCircle } from "lucide-react";
 export default function Tokenize() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, isLoading } = useAuth();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("");
   const [selectedHolding, setSelectedHolding] = useState<any>(null);
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
-
-  const { data: holdings, isLoading: holdingsLoading, error: holdingsError } = useQuery({
+  const { data: holdings = [], isLoading: holdingsLoading } = useQuery({
     queryKey: ["/api/holdings"],
-    enabled: isAuthenticated,
   });
 
-  const { data: companies, isLoading: companiesLoading, error: companiesError } = useQuery({
+  const { data: companies = [], isLoading: companiesLoading } = useQuery({
     queryKey: ["/api/companies"],
-    enabled: isAuthenticated,
   });
 
   const tokenizeMutation = useMutation({
@@ -61,18 +42,7 @@ export default function Tokenize() {
       queryClient.invalidateQueries({ queryKey: ["/api/tokenized-shares"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio/summary"] });
     },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message || "Failed to tokenize shares",
@@ -115,26 +85,9 @@ export default function Tokenize() {
     });
   };
 
-  useEffect(() => {
-    const errors = [holdingsError, companiesError];
-    for (const error of errors) {
-      if (error && isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    }
-  }, [holdingsError, companiesError, toast]);
 
-  if (!isAuthenticated || isLoading) {
-    return <div>Loading...</div>;
-  }
+
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {

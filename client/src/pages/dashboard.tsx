@@ -1,8 +1,4 @@
-import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import PortfolioChart from "@/components/PortfolioChart";
@@ -13,64 +9,21 @@ import { TrendingUp, Tag, Coins, ArrowRightLeft, ChartPie } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Dashboard() {
-  const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
-
-  const { data: portfolioSummary, isLoading: summaryLoading, error: summaryError } = useQuery({
+  const { data: portfolioSummary = {}, isLoading: summaryLoading } = useQuery({
     queryKey: ["/api/portfolio/summary"],
-    enabled: isAuthenticated,
   });
 
-  const { data: holdings, isLoading: holdingsLoading, error: holdingsError } = useQuery({
+  const { data: holdings = [], isLoading: holdingsLoading } = useQuery({
     queryKey: ["/api/holdings"],
-    enabled: isAuthenticated,
   });
 
-  const { data: tokenizedShares, isLoading: tokensLoading, error: tokensError } = useQuery({
+  const { data: tokenizedShares = [], isLoading: tokensLoading } = useQuery({
     queryKey: ["/api/tokenized-shares"],
-    enabled: isAuthenticated,
   });
 
-  const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useQuery({
+  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
     queryKey: ["/api/transactions"],
-    enabled: isAuthenticated,
   });
-
-  // Handle unauthorized errors
-  useEffect(() => {
-    const errors = [summaryError, holdingsError, tokensError, transactionsError];
-    for (const error of errors) {
-      if (error && isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    }
-  }, [summaryError, holdingsError, tokensError, transactionsError, toast]);
-
-  if (!isAuthenticated || isLoading) {
-    return <div>Loading...</div>;
-  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {

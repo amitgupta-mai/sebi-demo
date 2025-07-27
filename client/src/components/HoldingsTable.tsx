@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
-import { Tag, Coins, TrendingUp, TrendingDown } from "lucide-react";
+import { Tag, Coins, TrendingUp, TrendingDown, Briefcase } from "lucide-react";
 import TokenizeModal from "./TokenizeModal";
 import ConvertModal from "./ConvertModal";
 

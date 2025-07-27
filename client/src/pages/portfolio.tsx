@@ -1,8 +1,4 @@
-import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,58 +7,17 @@ import { Progress } from "@/components/ui/progress";
 import { TrendingUp, TrendingDown, Tag, Coins, Briefcase } from "lucide-react";
 
 export default function Portfolio() {
-  const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
-
-  const { data: portfolioSummary, isLoading: summaryLoading, error: summaryError } = useQuery({
+  const { data: portfolioSummary, isLoading: summaryLoading } = useQuery({
     queryKey: ["/api/portfolio/summary"],
-    enabled: isAuthenticated,
   });
 
-  const { data: holdings, isLoading: holdingsLoading, error: holdingsError } = useQuery({
+  const { data: holdings = [], isLoading: holdingsLoading } = useQuery({
     queryKey: ["/api/holdings"],
-    enabled: isAuthenticated,
   });
 
-  const { data: tokenizedShares, isLoading: tokensLoading, error: tokensError } = useQuery({
+  const { data: tokenizedShares = [], isLoading: tokensLoading } = useQuery({
     queryKey: ["/api/tokenized-shares"],
-    enabled: isAuthenticated,
   });
-
-  useEffect(() => {
-    const errors = [summaryError, holdingsError, tokensError];
-    for (const error of errors) {
-      if (error && isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    }
-  }, [summaryError, holdingsError, tokensError, toast]);
-
-  if (!isAuthenticated || isLoading) {
-    return <div>Loading...</div>;
-  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {

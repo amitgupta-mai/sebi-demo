@@ -1,7 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 import { 
   insertCompanySchema,
   insertHoldingSchema,
@@ -11,24 +10,34 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+// Demo user ID for all operations (since no auth)
+const DEMO_USER_ID = "demo-user-123";
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Demo user endpoint (replaces auth user)
+  app.get('/api/auth/user', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      // Return demo user data
+      const demoUser = {
+        id: DEMO_USER_ID,
+        email: "demo@investor.com",
+        firstName: "Demo",
+        lastName: "Investor",
+        profileImageUrl: null,
+        investorId: "INV-DEMO-001",
+        kycStatus: "verified",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      res.json(demoUser);
     } catch (error) {
-      console.error("Error fetching user:", error);
+      console.error("Error fetching demo user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 
   // Company routes
-  app.get('/api/companies', isAuthenticated, async (req, res) => {
+  app.get('/api/companies', async (req, res) => {
     try {
       const companies = await storage.getCompanies();
       res.json(companies);
@@ -38,7 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/companies/:id', isAuthenticated, async (req, res) => {
+  app.get('/api/companies/:id', async (req, res) => {
     try {
       const company = await storage.getCompany(req.params.id);
       if (!company) {
@@ -51,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/companies', isAuthenticated, async (req, res) => {
+  app.post('/api/companies', async (req, res) => {
     try {
       const companyData = insertCompanySchema.parse(req.body);
       const company = await storage.createCompany(companyData);
@@ -63,10 +72,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Holdings routes
-  app.get('/api/holdings', isAuthenticated, async (req: any, res) => {
+  app.get('/api/holdings', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const holdings = await storage.getUserHoldings(userId);
+      const holdings = await storage.getUserHoldings(DEMO_USER_ID);
       res.json(holdings);
     } catch (error) {
       console.error("Error fetching holdings:", error);
@@ -74,10 +82,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/holdings', isAuthenticated, async (req: any, res) => {
+  app.post('/api/holdings', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const holdingData = insertHoldingSchema.parse({ ...req.body, userId });
+      const holdingData = insertHoldingSchema.parse({ ...req.body, userId: DEMO_USER_ID });
       const holding = await storage.createHolding(holdingData);
       res.json(holding);
     } catch (error) {
@@ -87,10 +94,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Tokenized shares routes
-  app.get('/api/tokenized-shares', isAuthenticated, async (req: any, res) => {
+  app.get('/api/tokenized-shares', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const tokenizedShares = await storage.getUserTokenizedShares(userId);
+      const tokenizedShares = await storage.getUserTokenizedShares(DEMO_USER_ID);
       res.json(tokenizedShares);
     } catch (error) {
       console.error("Error fetching tokenized shares:", error);
@@ -99,9 +105,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Tokenize shares endpoint
-  app.post('/api/tokenize', isAuthenticated, async (req: any, res) => {
+  app.post('/api/tokenize', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = DEMO_USER_ID;
       const { companyId, quantity, price } = req.body;
 
       // Validate input
@@ -151,9 +157,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Convert tokens back to shares endpoint
-  app.post('/api/convert-to-shares', isAuthenticated, async (req: any, res) => {
+  app.post('/api/convert-to-shares', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = DEMO_USER_ID;
       const { companyId, quantity, price } = req.body;
 
       // Validate input
@@ -211,10 +217,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Orders routes
-  app.get('/api/orders', isAuthenticated, async (req: any, res) => {
+  app.get('/api/orders', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const orders = await storage.getUserOrders(userId);
+      const orders = await storage.getUserOrders(DEMO_USER_ID);
       res.json(orders);
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -222,14 +227,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/orders', isAuthenticated, async (req: any, res) => {
+  app.post('/api/orders', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const orderData = insertOrderSchema.parse({ ...req.body, userId });
+      const orderData = insertOrderSchema.parse({ ...req.body, userId: DEMO_USER_ID });
       
       // For sell orders, check if user has enough tokens
       if (orderData.orderType === 'sell') {
-        const tokenizedShare = await storage.getTokenizedShare(userId, orderData.companyId);
+        const tokenizedShare = await storage.getTokenizedShare(DEMO_USER_ID, orderData.companyId);
         if (!tokenizedShare || tokenizedShare.quantity < orderData.quantity) {
           return res.status(400).json({ message: "Insufficient tokens to sell" });
         }
@@ -244,10 +248,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Transactions routes
-  app.get('/api/transactions', isAuthenticated, async (req: any, res) => {
+  app.get('/api/transactions', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const transactions = await storage.getUserTransactions(userId);
+      const transactions = await storage.getUserTransactions(DEMO_USER_ID);
       res.json(transactions);
     } catch (error) {
       console.error("Error fetching transactions:", error);
@@ -256,10 +259,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Portfolio summary route
-  app.get('/api/portfolio/summary', isAuthenticated, async (req: any, res) => {
+  app.get('/api/portfolio/summary', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const summary = await storage.getUserPortfolioSummary(userId);
+      const summary = await storage.getUserPortfolioSummary(DEMO_USER_ID);
       res.json(summary);
     } catch (error) {
       console.error("Error fetching portfolio summary:", error);
@@ -268,8 +270,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Initialize sample data endpoint (for development)
-  app.post('/api/init-data', isAuthenticated, async (req, res) => {
+  app.post('/api/init-data', async (req, res) => {
     try {
+      // Create demo user if not exists
+      const existingUser = await storage.getUser(DEMO_USER_ID);
+      if (!existingUser) {
+        await storage.upsertUser({
+          id: DEMO_USER_ID,
+          email: "demo@investor.com",
+          firstName: "Demo",
+          lastName: "Investor",
+          profileImageUrl: null,
+        });
+      }
+
       // Create sample NSE companies
       const companies = [
         { symbol: 'TCS', name: 'Tata Consultancy Services Ltd', sector: 'Information Technology', currentPrice: '3456.80' },
@@ -279,10 +293,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { symbol: 'ICICIBANK', name: 'ICICI Bank Ltd', sector: 'Banking', currentPrice: '934.20' },
       ];
 
+      const createdCompanies = [];
       for (const companyData of companies) {
         const existingCompany = await storage.getCompanyBySymbol(companyData.symbol);
         if (!existingCompany) {
-          await storage.createCompany(companyData);
+          const company = await storage.createCompany(companyData);
+          createdCompanies.push(company);
+        } else {
+          createdCompanies.push(existingCompany);
+        }
+      }
+
+      // Create sample holdings for demo user
+      const existingHoldings = await storage.getUserHoldings(DEMO_USER_ID);
+      if (existingHoldings.length === 0) {
+        // Add some sample holdings
+        const sampleHoldings = [
+          { userId: DEMO_USER_ID, companyId: createdCompanies[0].id, quantity: 50, averagePrice: '3400.00' },
+          { userId: DEMO_USER_ID, companyId: createdCompanies[1].id, quantity: 25, averagePrice: '2800.00' },
+          { userId: DEMO_USER_ID, companyId: createdCompanies[2].id, quantity: 75, averagePrice: '1650.00' },
+        ];
+
+        for (const holdingData of sampleHoldings) {
+          await storage.createHolding(holdingData);
+        }
+
+        // Add some sample tokenized shares
+        const sampleTokenizedShares = [
+          { userId: DEMO_USER_ID, companyId: createdCompanies[3].id, quantity: 30, tokenizationPrice: '1580.00' },
+          { userId: DEMO_USER_ID, companyId: createdCompanies[4].id, quantity: 40, tokenizationPrice: '920.00' },
+        ];
+
+        for (const tokenData of sampleTokenizedShares) {
+          await storage.createTokenizedShare(tokenData);
         }
       }
 

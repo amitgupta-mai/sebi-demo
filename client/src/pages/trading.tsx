@@ -1,8 +1,6 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
@@ -18,39 +16,21 @@ import { ArrowRightLeft, TrendingUp, TrendingDown, Clock } from "lucide-react";
 export default function Trading() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, isLoading } = useAuth();
   const [orderType, setOrderType] = useState<"buy" | "sell">("buy");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("");
   const [price, setPrice] = useState<string>("");
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
-
-  const { data: companies, isLoading: companiesLoading, error: companiesError } = useQuery({
+  const { data: companies = [], isLoading: companiesLoading } = useQuery({
     queryKey: ["/api/companies"],
-    enabled: isAuthenticated,
   });
 
-  const { data: tokenizedShares, isLoading: tokensLoading, error: tokensError } = useQuery({
+  const { data: tokenizedShares = [], isLoading: tokensLoading } = useQuery({
     queryKey: ["/api/tokenized-shares"],
-    enabled: isAuthenticated,
   });
 
-  const { data: orders, isLoading: ordersLoading, error: ordersError } = useQuery({
+  const { data: orders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ["/api/orders"],
-    enabled: isAuthenticated,
   });
 
   const createOrderMutation = useMutation({
@@ -67,18 +47,7 @@ export default function Trading() {
       setPrice("");
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
     },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message || "Failed to place order",
@@ -130,26 +99,7 @@ export default function Trading() {
     });
   };
 
-  useEffect(() => {
-    const errors = [companiesError, tokensError, ordersError];
-    for (const error of errors) {
-      if (error && isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    }
-  }, [companiesError, tokensError, ordersError, toast]);
 
-  if (!isAuthenticated || isLoading) {
-    return <div>Loading...</div>;
-  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
