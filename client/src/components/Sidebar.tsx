@@ -53,8 +53,8 @@ export default function Sidebar() {
       </nav>
       
       {/* Powered by Kalp Studio */}
-      <div className="p-6 pt-0 border-t border-gray-100">
-        <div className="flex items-center justify-center space-x-2 text-gray-500">
+      <div className="p-6 pt-0">
+        <div className="flex flex-col items-center justify-center space-y-1 text-gray-500">
           <span className="text-xs font-medium">Powered by</span>
           <img 
             src="https://dev-ks-website.s3.ap-south-1.amazonaws.com/assets/kalp-digital.svg" 
