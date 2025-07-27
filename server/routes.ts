@@ -269,6 +269,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Market data route
+  app.get('/api/market-data', async (req, res) => {
+    try {
+      // Generate mock market data for demo purposes
+      const marketData = {
+        totalMarketCap: 284000000000000, // 2.84T
+        volume24h: 145200000000, // 145.2B
+        gainersPercent: 2.4,
+        losersPercent: -1.8,
+        topGainers: [
+          { symbol: 'TCS', change: 3.2 },
+          { symbol: 'INFY', change: 2.8 },
+        ],
+        topLosers: [
+          { symbol: 'RELIANCE', change: -1.5 },
+        ],
+        indices: {
+          nifty50: { value: 21890.45, change: 1.2 },
+          sensex: { value: 72456.78, change: 0.9 }
+        }
+      };
+      res.json(marketData);
+    } catch (error) {
+      console.error("Error fetching market data:", error);
+      res.status(500).json({ message: "Failed to fetch market data" });
+    }
+  });
+
   // Initialize sample data endpoint (for development)
   app.post('/api/init-data', async (req, res) => {
     try {

@@ -7,11 +7,13 @@ import {
   Undo2, 
   Briefcase, 
   History, 
-  UserCheck 
+  UserCheck,
+  TrendingUp
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
+  { name: "Market", href: "/market", icon: TrendingUp },
   { name: "Tokenize Shares", href: "/tokenize", icon: Coins },
   { name: "Token Trading", href: "/trading", icon: ArrowRightLeft },
   { name: "Convert to Shares", href: "/convert", icon: Undo2 },
