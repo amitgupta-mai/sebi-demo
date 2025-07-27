@@ -218,11 +218,14 @@ export const wallets = pgTable("wallets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().unique().references(() => users.id),
   balance: decimal("balance", { precision: 15, scale: 2 }).notNull().default('0'),
+  cbdcBalance: decimal("cbdc_balance", { precision: 15, scale: 2 }).notNull().default('0'),
+  cbdcWalletId: varchar("cbdc_wallet_id"),
+  cbdcWalletConnected: boolean("cbdc_wallet_connected").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const walletTransactionTypeEnum = pgEnum('wallet_transaction_type', ['add_fund', 'withdraw_fund', 'trading_debit', 'trading_credit']);
+export const walletTransactionTypeEnum = pgEnum('wallet_transaction_type', ['add_fund', 'withdraw_fund', 'trading_debit', 'trading_credit', 'cbdc_deposit', 'cbdc_withdraw']);
 export const walletTransactionStatusEnum = pgEnum('wallet_transaction_status', ['pending', 'completed', 'failed']);
 
 export const walletTransactions = pgTable("wallet_transactions", {

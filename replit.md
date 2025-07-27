@@ -54,6 +54,8 @@ Preferred communication style: Simple, everyday language.
 3. **Token Conversion**: Convert tokens back to physical shares
 4. **Portfolio Management**: View holdings and performance
 5. **Transaction History**: Complete audit trail
+6. **Wallet Management**: Fund management with CBDC integration
+7. **CBDC Integration**: Central Bank Digital Currency wallet connectivity
 
 ### UI Components
 - Responsive design with mobile-first approach

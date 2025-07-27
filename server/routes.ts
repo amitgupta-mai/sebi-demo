@@ -481,6 +481,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/wallet/connect-cbdc', async (req, res) => {
+    try {
+      const { cbdcWalletId } = req.body;
+      
+      const schema = z.object({
+        cbdcWalletId: z.string(),
+      });
+      const validatedData = schema.parse({ cbdcWalletId });
+      
+      // Connect CBDC wallet
+      await storage.connectCbdcWallet(DEMO_USER_ID, validatedData.cbdcWalletId);
+      
+      res.json({ message: "CBDC wallet connected successfully" });
+    } catch (error) {
+      console.error("Error connecting CBDC wallet:", error);
+      res.status(400).json({ message: "Failed to connect CBDC wallet" });
+    }
+  });
+
+  app.post('/api/wallet/cbdc-transfer', async (req, res) => {
+    try {
+      const { amount, transferType } = req.body;
+      
+      const schema = z.object({
+        amount: z.string(),
+        transferType: z.enum(['deposit', 'withdraw']),
+      });
+      const validatedData = schema.parse({ amount, transferType });
+      
+      // Get current wallet
+      const wallet = await storage.getUserWallet(DEMO_USER_ID);
+      if (!wallet) {
+        return res.status(400).json({ message: "Wallet not found" });
+      }
+      
+      if (!wallet.cbdcWalletConnected) {
+        return res.status(400).json({ message: "CBDC wallet not connected" });
+      }
+      
+      const transferAmount = parseFloat(validatedData.amount);
+      const currentBalance = parseFloat(wallet.balance);
+      const currentCbdcBalance = parseFloat(wallet.cbdcBalance || '0');
+      
+      if (transferType === 'deposit') {
+        // Transfer from regular wallet to CBDC
+        if (currentBalance < transferAmount) {
+          return res.status(400).json({ message: "Insufficient balance" });
+        }
+        
+        const newBalance = (currentBalance - transferAmount).toFixed(2);
+        const newCbdcBalance = (currentCbdcBalance + transferAmount).toFixed(2);
+        
+        await storage.updateWalletBalance(DEMO_USER_ID, newBalance);
+        await storage.updateCbdcBalance(DEMO_USER_ID, newCbdcBalance);
+        
+        // Create transaction record
+        await storage.createWalletTransaction({
+          userId: DEMO_USER_ID,
+          transactionType: 'cbdc_deposit',
+          amount: validatedData.amount,
+          description: 'Transfer to CBDC wallet',
+          status: 'completed',
+          referenceId: `CBDC${Date.now()}`,
+        });
+      } else {
+        // Transfer from CBDC to regular wallet
+        if (currentCbdcBalance < transferAmount) {
+          return res.status(400).json({ message: "Insufficient CBDC balance" });
+        }
+        
+        const newBalance = (currentBalance + transferAmount).toFixed(2);
+        const newCbdcBalance = (currentCbdcBalance - transferAmount).toFixed(2);
+        
+        await storage.updateWalletBalance(DEMO_USER_ID, newBalance);
+        await storage.updateCbdcBalance(DEMO_USER_ID, newCbdcBalance);
+        
+        // Create transaction record
+        await storage.createWalletTransaction({
+          userId: DEMO_USER_ID,
+          transactionType: 'cbdc_withdraw',
+          amount: validatedData.amount,
+          description: 'Transfer from CBDC wallet',
+          status: 'completed',
+          referenceId: `CBDC${Date.now()}`,
+        });
+      }
+      
+      res.json({ message: "CBDC transfer completed successfully" });
+    } catch (error) {
+      console.error("Error processing CBDC transfer:", error);
+      res.status(400).json({ message: "Failed to process CBDC transfer" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

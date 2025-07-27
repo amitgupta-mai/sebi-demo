@@ -75,6 +75,8 @@ export interface IStorage {
   getUserWallet(userId: string): Promise<Wallet | undefined>;
   createWallet(wallet: InsertWallet): Promise<Wallet>;
   updateWalletBalance(userId: string, newBalance: string): Promise<Wallet>;
+  connectCbdcWallet(userId: string, cbdcWalletId: string): Promise<Wallet>;
+  updateCbdcBalance(userId: string, newCbdcBalance: string): Promise<Wallet>;
   getUserWalletTransactions(userId: string): Promise<WalletTransaction[]>;
   createWalletTransaction(transaction: InsertWalletTransaction): Promise<WalletTransaction>;
 }
@@ -297,6 +299,27 @@ export class DatabaseStorage implements IStorage {
   async updateWalletBalance(userId: string, newBalance: string): Promise<Wallet> {
     const [wallet] = await db.update(wallets)
       .set({ balance: newBalance, updatedAt: new Date() })
+      .where(eq(wallets.userId, userId))
+      .returning();
+    return wallet;
+  }
+
+  async connectCbdcWallet(userId: string, cbdcWalletId: string): Promise<Wallet> {
+    const [wallet] = await db.update(wallets)
+      .set({ 
+        cbdcWalletId, 
+        cbdcWalletConnected: true, 
+        cbdcBalance: '1000.00', // Demo CBDC balance
+        updatedAt: new Date() 
+      })
+      .where(eq(wallets.userId, userId))
+      .returning();
+    return wallet;
+  }
+
+  async updateCbdcBalance(userId: string, newCbdcBalance: string): Promise<Wallet> {
+    const [wallet] = await db.update(wallets)
+      .set({ cbdcBalance: newCbdcBalance, updatedAt: new Date() })
       .where(eq(wallets.userId, userId))
       .returning();
     return wallet;
