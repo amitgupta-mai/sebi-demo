@@ -67,8 +67,8 @@ export default function Dashboard() {
                       +8.5% from last month
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-primary bg-opacity-10 rounded-lg flex items-center justify-center">
-                    <ChartPie className="text-primary text-xl" />
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <ChartPie className="h-6 w-6 text-blue-600" />
                   </div>
                 </div>
               </CardContent>
@@ -86,8 +86,8 @@ export default function Dashboard() {
                       {summaryLoading ? '...' : `${portfolioSummary?.totalHoldings || 0} holdings`}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-secondary bg-opacity-10 rounded-lg flex items-center justify-center">
-                    <Tag className="text-secondary text-xl" />
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Tag className="h-6 w-6 text-green-600" />
                   </div>
                 </div>
               </CardContent>
@@ -105,8 +105,8 @@ export default function Dashboard() {
                       {summaryLoading ? '...' : `${portfolioSummary?.totalTokens || 0} tokens`}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-warning bg-opacity-10 rounded-lg flex items-center justify-center">
-                    <Coins className="text-warning text-xl" />
+                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <Coins className="h-6 w-6 text-orange-600" />
                   </div>
                 </div>
               </CardContent>
@@ -122,8 +122,8 @@ export default function Dashboard() {
                     </p>
                     <p className="text-sm text-destructive mt-1">Pending execution</p>
                   </div>
-                  <div className="w-12 h-12 bg-destructive bg-opacity-10 rounded-lg flex items-center justify-center">
-                    <ArrowRightLeft className="text-destructive text-xl" />
+                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <ArrowRightLeft className="h-6 w-6 text-red-600" />
                   </div>
                 </div>
               </CardContent>
@@ -188,8 +188,8 @@ export default function Dashboard() {
                     transactions.slice(0, 5).map((transaction: any) => (
                       <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-secondary bg-opacity-10 rounded-full flex items-center justify-center">
-                            <Coins className="text-secondary text-sm" />
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <Coins className="h-4 w-4 text-green-600" />
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900">

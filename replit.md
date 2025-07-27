@@ -141,3 +141,6 @@ The application follows a monorepo structure with clear separation between front
   - Preserved code for easy re-activation when needed
 - Updated Market page Quick Trade section to use Indian Rupee (₹) symbol instead of dollar symbol
   - Changed DollarSign icon to IndianRupee icon for better localization
+- Fixed missing icons in Dashboard cards by updating CSS classes and icon sizing
+  - Replaced custom color classes with standard Tailwind classes for better visibility
+  - Updated icon sizing from text-xl to h-6 w-6 for consistent display
