@@ -575,6 +575,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/wallet/disconnect-cbdc', async (req, res) => {
+    try {
+      const userId = DEMO_USER_ID;
+      
+      const wallet = await storage.getUserWallet(userId);
+      if (!wallet) {
+        return res.status(404).json({ message: 'Wallet not found' });
+      }
+
+      if (!wallet.cbdcWalletConnected) {
+        return res.status(400).json({ message: 'CBDC wallet not connected' });
+      }
+
+      // Disconnect CBDC wallet
+      await storage.disconnectCbdcWallet(userId);
+
+      res.json({ message: 'CBDC wallet disconnected successfully' });
+    } catch (error) {
+      console.error('Error disconnecting CBDC wallet:', error);
+      res.status(500).json({ message: 'Failed to disconnect CBDC wallet' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -1,29 +1,30 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Header from "@/components/Header";
-import Sidebar from "@/components/Sidebar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import Header from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
-  WalletIcon, 
+  Wallet as WalletIcon, 
   Plus, 
   Minus, 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  TrendingUp, 
-  TrendingDown, 
   DollarSign, 
-  CheckCircle, 
-  XCircle, 
+  CreditCard, 
+  TrendingUp, 
+  TrendingDown,
+  ArrowUpRight,
+  ArrowDownLeft,
   Clock,
-  CreditCard
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 
 export default function Wallet() {
@@ -44,7 +45,7 @@ export default function Wallet() {
     queryKey: ["/api/wallet"],
   });
 
-  const { data: walletTransactions, isLoading: transactionsLoading } = useQuery({
+  const { data: walletTransactions = [], isLoading: transactionsLoading } = useQuery({
     queryKey: ["/api/wallet/transactions"],
   });
 
@@ -140,27 +141,6 @@ export default function Wallet() {
     },
   });
 
-  const disconnectCbdcMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("POST", "/api/wallet/disconnect-cbdc", {});
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "CBDC wallet disconnected successfully!",
-      });
-      setIsCbdcDisconnectOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to disconnect CBDC wallet",
-        variant: "destructive",
-      });
-    },
-  });
-
   const formatCurrency = (amount: string | number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -215,7 +195,7 @@ export default function Wallet() {
     if (!addFundAmount || !paymentMethod) {
       toast({
         title: "Error",
-        description: "Please enter amount and select payment method",
+        description: "Please fill all fields",
         variant: "destructive",
       });
       return;
@@ -321,6 +301,27 @@ export default function Wallet() {
     });
   };
 
+  const disconnectCbdcMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/wallet/disconnect-cbdc", {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "CBDC wallet disconnected successfully!",
+      });
+      setIsCbdcDisconnectOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to disconnect CBDC wallet",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDisconnectCbdc = () => {
     disconnectCbdcMutation.mutate();
   };
@@ -367,8 +368,8 @@ export default function Wallet() {
                     <p className="text-2xl font-bold text-green-600">
                       {formatCurrency(
                         (walletTransactions as any[])
-                          ?.filter((t: any) => t.transactionType === 'add_fund' && t.status === 'completed')
-                          ?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0
+                          .filter((t: any) => t.transactionType === 'add_fund' && t.status === 'completed')
+                          .reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0)
                       )}
                     </p>
                   </div>
@@ -387,8 +388,8 @@ export default function Wallet() {
                     <p className="text-2xl font-bold text-red-600">
                       {formatCurrency(
                         (walletTransactions as any[])
-                          ?.filter((t: any) => t.transactionType === 'withdraw_fund' && t.status === 'completed')
-                          ?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0
+                          .filter((t: any) => t.transactionType === 'withdraw_fund' && t.status === 'completed')
+                          .reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0)
                       )}
                     </p>
                   </div>
@@ -454,8 +455,8 @@ export default function Wallet() {
                           <SelectContent>
                             <SelectItem value="upi">UPI</SelectItem>
                             <SelectItem value="netbanking">Net Banking</SelectItem>
-                            <SelectItem value="card">Debit/Credit Card</SelectItem>
-                            <SelectItem value="wallet">Digital Wallet</SelectItem>
+                            <SelectItem value="debit_card">Debit Card</SelectItem>
+                            <SelectItem value="credit_card">Credit Card</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -507,7 +508,6 @@ export default function Wallet() {
                   </DialogContent>
                 </Dialog>
 
-                {/* CBDC Connect/Disconnect */}
                 {wallet && (wallet as any).cbdcWalletConnected ? (
                   <Dialog open={isCbdcDisconnectOpen} onOpenChange={setIsCbdcDisconnectOpen}>
                     <DialogTrigger asChild>
@@ -563,34 +563,33 @@ export default function Wallet() {
                         Connect CBDC
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Connect CBDC Wallet</DialogTitle>
-                        <p className="text-sm text-gray-600">Link your Central Bank Digital Currency wallet to enable digital currency transactions</p>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="cbdc-wallet-id">CBDC Wallet ID</Label>
-                          <Input
-                            id="cbdc-wallet-id"
-                            type="text"
-                            placeholder="Enter your CBDC wallet ID"
-                            value={cbdcWalletId}
-                            onChange={(e) => setCbdcWalletId(e.target.value)}
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Format: CBDC-XXXX-XXXX-XXXX</p>
-                        </div>
-                        <Button 
-                          onClick={handleConnectCbdc}
-                          disabled={connectCbdcMutation.isPending}
-                          className="w-full"
-                        >
-                          {connectCbdcMutation.isPending ? "Connecting..." : "Connect CBDC Wallet"}
-                        </Button>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Connect CBDC Wallet</DialogTitle>
+                      <p className="text-sm text-gray-600">Link your Central Bank Digital Currency wallet to enable digital currency transactions</p>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="cbdc-wallet-id">CBDC Wallet ID</Label>
+                        <Input
+                          id="cbdc-wallet-id"
+                          type="text"
+                          placeholder="Enter your CBDC wallet ID"
+                          value={cbdcWalletId}
+                          onChange={(e) => setCbdcWalletId(e.target.value)}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Format: CBDC-XXXX-XXXX-XXXX</p>
                       </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
+                      <Button 
+                        onClick={handleConnectCbdc}
+                        disabled={connectCbdcMutation.isPending}
+                        className="w-full"
+                      >
+                        {connectCbdcMutation.isPending ? "Connecting..." : "Connect CBDC Wallet"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
 
                 <Dialog open={isCbdcTransferOpen} onOpenChange={setIsCbdcTransferOpen}>
                   <DialogTrigger asChild>
@@ -658,11 +657,11 @@ export default function Wallet() {
                 <div className="space-y-4">
                   {transactionsLoading ? (
                     <p className="text-center text-gray-500">Loading transactions...</p>
-                  ) : (walletTransactions as any[])?.length === 0 ? (
+                  ) : (walletTransactions as any[]).length === 0 ? (
                     <p className="text-center text-gray-500">No transactions yet</p>
                   ) : (
                     <div className="max-h-96 overflow-y-auto">
-                      {(walletTransactions as any[])?.map((transaction: any) => (
+                      {(walletTransactions as any[]).map((transaction: any) => (
                         <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex items-center space-x-4">
                             {getTransactionIcon(transaction.transactionType)}
@@ -682,7 +681,7 @@ export default function Wallet() {
                           <div className="flex items-center space-x-3">
                             <div className="text-right">
                               <p className={`font-semibold ${getTransactionColor(transaction.transactionType)}`}>
-                                {(transaction.transactionType === 'add_fund' || transaction.transactionType === 'trading_credit' || transaction.transactionType === 'cbdc_withdraw') ? '+' : '-'}
+                                {transaction.transactionType === 'add_fund' || transaction.transactionType === 'trading_credit' ? '+' : '-'}
                                 {formatCurrency(transaction.amount)}
                               </p>
                               <div className="flex items-center space-x-1">
