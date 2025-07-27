@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Bell, Coins, ChevronDown, User, Settings } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Bell, Coins, ChevronDown, User, Settings, Shield, Key, CreditCard, Eye, Globe, HelpCircle, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function Header() {
@@ -58,14 +58,52 @@ export default function Header() {
                   <ChevronDown className="h-4 w-4 text-gray-400" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem className="flex items-center">
+              <DropdownMenuContent align="end" className="w-64">
+                <div className="px-3 py-2 border-b">
+                  <p className="text-sm font-medium">{demoUser.firstName} {demoUser.lastName}</p>
+                  <p className="text-xs text-gray-500">{demoUser.email}</p>
+                </div>
+                <DropdownMenuItem className="py-3">
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="flex items-center">
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="py-3">
                   <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
+                  <span>General Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="py-3">
+                  <Shield className="mr-2 h-4 w-4" />
+                  <span>Security & Privacy</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="py-3">
+                  <Key className="mr-2 h-4 w-4" />
+                  <span>API Keys</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="py-3">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  <span>Payment Methods</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="py-3">
+                  <Eye className="mr-2 h-4 w-4" />
+                  <span>Appearance</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="py-3">
+                  <Bell className="mr-2 h-4 w-4" />
+                  <span>Notifications</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="py-3">
+                  <Globe className="mr-2 h-4 w-4" />
+                  <span>Language & Region</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="py-3">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>Help & Support</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="py-3 text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

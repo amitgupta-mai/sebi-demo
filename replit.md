@@ -63,6 +63,7 @@ Preferred communication style: Simple, everyday language.
 - Custom modals for tokenization, trading, and conversion
 - Real-time data updates using React Query
 - Interactive charts for portfolio visualization
+- Comprehensive settings menu with security, payment, and appearance options
 
 ## Data Flow
 
