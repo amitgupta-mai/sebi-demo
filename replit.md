@@ -139,3 +139,5 @@ The application follows a monorepo structure with clear separation between front
 - Hidden API Keys and Payment tabs in settings menu (commented out for future enablement)
   - Updated settings layout from 7 tabs to 5 tabs
   - Preserved code for easy re-activation when needed
+- Updated Market page Quick Trade section to use Indian Rupee (₹) symbol instead of dollar symbol
+  - Changed DollarSign icon to IndianRupee icon for better localization

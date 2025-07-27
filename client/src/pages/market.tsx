@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Activity, DollarSign, BarChart3, Volume2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity, IndianRupee, BarChart3, Volume2 } from "lucide-react";
 
 export default function Market() {
   const { toast } = useToast();
@@ -366,7 +366,7 @@ export default function Market() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <DollarSign className="mr-2 h-5 w-5" />
+                    <IndianRupee className="mr-2 h-5 w-5" />
                     Quick Trade
                   </CardTitle>
                 </CardHeader>
