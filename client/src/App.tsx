@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import Market from "@/pages/market";
 import Wallet from "@/pages/wallet";
+import Settings from "@/pages/settings";
 import Tokenize from "@/pages/tokenize";
 import Trading from "@/pages/trading";
 import Convert from "@/pages/convert";
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/convert" component={Convert} />
       <Route path="/portfolio" component={Portfolio} />
       <Route path="/transactions" component={Transactions} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );

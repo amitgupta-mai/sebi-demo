@@ -9,7 +9,8 @@ import {
   History, 
   UserCheck,
   TrendingUp,
-  Wallet
+  Wallet,
+  Settings
 } from "lucide-react";
 
 const navigation = [
@@ -21,7 +22,7 @@ const navigation = [
   { name: "Convert to Shares", href: "/convert", icon: Undo2 },
   { name: "Portfolio", href: "/portfolio", icon: Briefcase },
   { name: "Transaction History", href: "/transactions", icon: History },
-  { name: "KYC Status", href: "/kyc", icon: UserCheck },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export default function Sidebar() {
