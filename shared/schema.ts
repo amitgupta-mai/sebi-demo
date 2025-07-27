@@ -112,11 +112,13 @@ export const transactions = pgTable("transactions", {
 });
 
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   holdings: many(holdings),
   tokenizedShares: many(tokenizedShares),
   orders: many(orders),
   transactions: many(transactions),
+  wallet: one(wallets),
+  walletTransactions: many(walletTransactions),
 }));
 
 export const companiesRelations = relations(companies, ({ many }) => ({
@@ -211,6 +213,40 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
   createdAt: true,
 });
 
+// Wallet tables
+export const wallets = pgTable("wallets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  balance: decimal("balance", { precision: 15, scale: 2 }).notNull().default('0'),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const walletTransactionTypeEnum = pgEnum('wallet_transaction_type', ['add_fund', 'withdraw_fund', 'trading_debit', 'trading_credit']);
+export const walletTransactionStatusEnum = pgEnum('wallet_transaction_status', ['pending', 'completed', 'failed']);
+
+export const walletTransactions = pgTable("wallet_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  transactionType: walletTransactionTypeEnum("transaction_type").notNull(),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  description: varchar("description"),
+  status: walletTransactionStatusEnum("status").notNull().default('completed'),
+  referenceId: varchar("reference_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertWalletSchema = createInsertSchema(wallets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWalletTransactionSchema = createInsertSchema(walletTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -224,3 +260,27 @@ export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+export type Wallet = typeof wallets.$inferSelect;
+export type InsertWallet = z.infer<typeof insertWalletSchema>;
+export type WalletTransaction = typeof walletTransactions.$inferSelect;
+export type InsertWalletTransaction = z.infer<typeof insertWalletTransactionSchema>;
+
+// Wallet Relations
+export const walletsRelations = relations(wallets, ({ one, many }) => ({
+  user: one(users, {
+    fields: [wallets.userId],
+    references: [users.id],
+  }),
+  transactions: many(walletTransactions),
+}));
+
+export const walletTransactionsRelations = relations(walletTransactions, ({ one }) => ({
+  user: one(users, {
+    fields: [walletTransactions.userId],
+    references: [users.id],
+  }),
+  wallet: one(wallets, {
+    fields: [walletTransactions.userId],
+    references: [wallets.userId],
+  }),
+}));

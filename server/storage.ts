@@ -5,6 +5,8 @@ import {
   tokenizedShares,
   orders,
   transactions,
+  wallets,
+  walletTransactions,
   type User,
   type UpsertUser,
   type Company,
@@ -17,6 +19,10 @@ import {
   type InsertOrder,
   type Transaction,
   type InsertTransaction,
+  type Wallet,
+  type InsertWallet,
+  type WalletTransaction,
+  type InsertWalletTransaction,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -64,6 +70,13 @@ export interface IStorage {
     totalTokens: number;
     activeOrders: number;
   }>;
+
+  // Wallet operations
+  getUserWallet(userId: string): Promise<Wallet | undefined>;
+  createWallet(wallet: InsertWallet): Promise<Wallet>;
+  updateWalletBalance(userId: string, newBalance: string): Promise<Wallet>;
+  getUserWalletTransactions(userId: string): Promise<WalletTransaction[]>;
+  createWalletTransaction(transaction: InsertWalletTransaction): Promise<WalletTransaction>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -268,6 +281,37 @@ export class DatabaseStorage implements IStorage {
       totalTokens: userTokens.length,
       activeOrders,
     };
+  }
+
+  // Wallet operations
+  async getUserWallet(userId: string): Promise<Wallet | undefined> {
+    const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId));
+    return wallet;
+  }
+
+  async createWallet(wallet: InsertWallet): Promise<Wallet> {
+    const [newWallet] = await db.insert(wallets).values(wallet).returning();
+    return newWallet;
+  }
+
+  async updateWalletBalance(userId: string, newBalance: string): Promise<Wallet> {
+    const [wallet] = await db.update(wallets)
+      .set({ balance: newBalance, updatedAt: new Date() })
+      .where(eq(wallets.userId, userId))
+      .returning();
+    return wallet;
+  }
+
+  async getUserWalletTransactions(userId: string): Promise<WalletTransaction[]> {
+    return await db.select()
+      .from(walletTransactions)
+      .where(eq(walletTransactions.userId, userId))
+      .orderBy(desc(walletTransactions.createdAt));
+  }
+
+  async createWalletTransaction(transaction: InsertWalletTransaction): Promise<WalletTransaction> {
+    const [newTransaction] = await db.insert(walletTransactions).values(transaction).returning();
+    return newTransaction;
   }
 }
 

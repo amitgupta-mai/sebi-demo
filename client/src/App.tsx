@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import Market from "@/pages/market";
+import Wallet from "@/pages/wallet";
 import Tokenize from "@/pages/tokenize";
 import Trading from "@/pages/trading";
 import Convert from "@/pages/convert";
@@ -17,6 +18,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/market" component={Market} />
+      <Route path="/wallet" component={Wallet} />
       <Route path="/tokenize" component={Tokenize} />
       <Route path="/trading" component={Trading} />
       <Route path="/convert" component={Convert} />

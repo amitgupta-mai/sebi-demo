@@ -297,6 +297,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Wallet routes
+  app.get('/api/wallet', async (req, res) => {
+    try {
+      let wallet = await storage.getUserWallet(DEMO_USER_ID);
+      
+      // Create wallet if it doesn't exist
+      if (!wallet) {
+        wallet = await storage.createWallet({
+          userId: DEMO_USER_ID,
+          balance: '10000.00', // Demo starting balance
+        });
+      }
+      
+      res.json(wallet);
+    } catch (error) {
+      console.error("Error fetching wallet:", error);
+      res.status(500).json({ message: "Failed to fetch wallet" });
+    }
+  });
+
+  app.get('/api/wallet/transactions', async (req, res) => {
+    try {
+      const transactions = await storage.getUserWalletTransactions(DEMO_USER_ID);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching wallet transactions:", error);
+      res.status(500).json({ message: "Failed to fetch wallet transactions" });
+    }
+  });
+
+  app.post('/api/wallet/add-fund', async (req, res) => {
+    try {
+      const { amount, paymentMethod } = req.body;
+      
+      const schema = z.object({
+        amount: z.string(),
+        paymentMethod: z.string(),
+      });
+      const validatedData = schema.parse({ amount, paymentMethod });
+      
+      // Get current wallet
+      let wallet = await storage.getUserWallet(DEMO_USER_ID);
+      if (!wallet) {
+        wallet = await storage.createWallet({
+          userId: DEMO_USER_ID,
+          balance: '0',
+        });
+      }
+      
+      // Update balance
+      const currentBalance = parseFloat(wallet.balance);
+      const addAmount = parseFloat(validatedData.amount);
+      const newBalance = (currentBalance + addAmount).toFixed(2);
+      
+      await storage.updateWalletBalance(DEMO_USER_ID, newBalance);
+      
+      // Create transaction record
+      await storage.createWalletTransaction({
+        userId: DEMO_USER_ID,
+        transactionType: 'add_fund',
+        amount: validatedData.amount,
+        description: `Funds added via ${paymentMethod}`,
+        status: 'completed',
+        referenceId: `TXN${Date.now()}`,
+      });
+      
+      res.json({ message: "Funds added successfully", newBalance });
+    } catch (error) {
+      console.error("Error adding funds:", error);
+      res.status(400).json({ message: "Failed to add funds" });
+    }
+  });
+
+  app.post('/api/wallet/withdraw', async (req, res) => {
+    try {
+      const { amount } = req.body;
+      
+      const schema = z.object({
+        amount: z.string(),
+      });
+      const validatedData = schema.parse({ amount });
+      
+      // Get current wallet
+      const wallet = await storage.getUserWallet(DEMO_USER_ID);
+      if (!wallet) {
+        return res.status(400).json({ message: "Wallet not found" });
+      }
+      
+      // Check balance
+      const currentBalance = parseFloat(wallet.balance);
+      const withdrawAmount = parseFloat(validatedData.amount);
+      
+      if (currentBalance < withdrawAmount) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+      
+      // Update balance
+      const newBalance = (currentBalance - withdrawAmount).toFixed(2);
+      await storage.updateWalletBalance(DEMO_USER_ID, newBalance);
+      
+      // Create transaction record
+      await storage.createWalletTransaction({
+        userId: DEMO_USER_ID,
+        transactionType: 'withdraw_fund',
+        amount: validatedData.amount,
+        description: 'Withdrawal request',
+        status: 'completed',
+        referenceId: `WTH${Date.now()}`,
+      });
+      
+      res.json({ message: "Withdrawal processed successfully", newBalance });
+    } catch (error) {
+      console.error("Error processing withdrawal:", error);
+      res.status(400).json({ message: "Failed to process withdrawal" });
+    }
+  });
+
   // Initialize sample data endpoint (for development)
   app.post('/api/init-data', async (req, res) => {
     try {

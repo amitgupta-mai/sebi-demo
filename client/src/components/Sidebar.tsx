@@ -8,12 +8,14 @@ import {
   Briefcase, 
   History, 
   UserCheck,
-  TrendingUp
+  TrendingUp,
+  Wallet
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Market", href: "/market", icon: TrendingUp },
+  { name: "Wallet", href: "/wallet", icon: Wallet },
   { name: "Tokenize Shares", href: "/tokenize", icon: Coins },
   { name: "Token Trading", href: "/trading", icon: ArrowRightLeft },
   { name: "Convert to Shares", href: "/convert", icon: Undo2 },
