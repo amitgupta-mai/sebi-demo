@@ -24,8 +24,8 @@ export default function Sidebar() {
   const [location] = useLocation();
 
   return (
-    <aside className="w-64 bg-white shadow-sm h-screen sticky top-16 overflow-y-auto">
-      <nav className="p-6">
+    <aside className="w-64 bg-white shadow-sm h-screen sticky top-16 overflow-y-auto flex flex-col">
+      <nav className="p-6 flex-1">
         <ul className="space-y-2">
           {navigation.map((item) => {
             const isActive = location === item.href || 
@@ -51,6 +51,18 @@ export default function Sidebar() {
           })}
         </ul>
       </nav>
+      
+      {/* Powered by Kalp Studio */}
+      <div className="p-6 pt-0 border-t border-gray-100">
+        <div className="flex items-center justify-center space-x-2 text-gray-500">
+          <span className="text-xs font-medium">Powered by</span>
+          <img 
+            src="https://dev-ks-website.s3.ap-south-1.amazonaws.com/assets/kalp-digital.svg" 
+            alt="Kalp Studio"
+            className="h-6 w-auto"
+          />
+        </div>
+      </div>
     </aside>
   );
 }
