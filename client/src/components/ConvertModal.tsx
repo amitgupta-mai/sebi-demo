@@ -43,7 +43,8 @@ export default function ConvertModal({ isOpen, onClose, tokenizedShare }: Conver
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          // Handle authentication in mock mode
+        console.log("Mock authentication required");
         }, 500);
         return;
       }

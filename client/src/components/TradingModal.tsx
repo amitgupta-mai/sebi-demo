@@ -48,7 +48,8 @@ export default function TradingModal({ isOpen, onClose, companies, tokenizedShar
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          // Handle authentication in mock mode
+        console.log("Mock authentication required");
         }, 500);
         return;
       }
