@@ -131,29 +131,29 @@
 
 /* Company logo placeholders */
 .company-logo {
-  @apply w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold;
+  @apply w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold text-white;
 }
 
 .company-logo.tcs {
-  @apply bg-blue-100 text-blue-800;
+  @apply bg-blue-500;
 }
 
 .company-logo.reliance {
-  @apply bg-red-100 text-red-800;
+  @apply bg-red-500;
 }
 
 .company-logo.infy {
-  @apply bg-green-100 text-green-800;
+  @apply bg-green-500;
 }
 
 .company-logo.hdfcbank {
-  @apply bg-orange-100 text-orange-800;
+  @apply bg-orange-500;
 }
 
 .company-logo.icicibank {
-  @apply bg-purple-100 text-purple-800;
+  @apply bg-purple-500;
 }
 
 .company-logo.default {
-  @apply bg-gray-100 text-gray-800;
+  @apply bg-gray-500;
 }
