@@ -1,162 +1,221 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Header from "@/components/Header";
-import Sidebar from "@/components/Sidebar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { 
-  WalletIcon, 
-  Plus, 
-  Minus, 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  CheckCircle, 
-  XCircle, 
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Header from '@/components/Header';
+import Sidebar from '@/components/Sidebar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import {
+  WalletIcon,
+  Plus,
+  Minus,
+  ArrowUpRight,
+  ArrowDownLeft,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  CheckCircle,
+  XCircle,
   Clock,
-  CreditCard
-} from "lucide-react";
+  CreditCard,
+} from 'lucide-react';
 
 export default function Wallet() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [addFundAmount, setAddFundAmount] = useState<string>("");
-  const [withdrawAmount, setWithdrawAmount] = useState<string>("");
-  const [paymentMethod, setPaymentMethod] = useState<string>("");
-  const [cbdcWalletId, setCbdcWalletId] = useState<string>("");
-  const [cbdcAmount, setCbdcAmount] = useState<string>("");
+  const [addFundAmount, setAddFundAmount] = useState<string>('');
+  const [withdrawAmount, setWithdrawAmount] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
+  const [cbdcWalletId, setCbdcWalletId] = useState<string>('');
+  const [cbdcAmount, setCbdcAmount] = useState<string>('');
   const [isAddFundOpen, setIsAddFundOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [isCbdcConnectOpen, setIsCbdcConnectOpen] = useState(false);
   const [isCbdcTransferOpen, setIsCbdcTransferOpen] = useState(false);
   const [isCbdcDisconnectOpen, setIsCbdcDisconnectOpen] = useState(false);
 
-  const { data: wallet, isLoading: walletLoading } = useQuery({
-    queryKey: ["/api/wallet"],
+  const { data: walletResponse, isLoading: walletLoading } = useQuery<{
+    success: boolean;
+    message: string;
+    data: {
+      id: string;
+      userId: string;
+      balance: number;
+      totalAdded: number;
+      totalWithdrawn: number;
+      cbdcBalance: number;
+      cbdcConnected: boolean;
+      cbdcWalletAddress: string | null;
+      totalBalance: number;
+      createdAt: string;
+      updatedAt: string;
+    };
+  }>({
+    queryKey: ['/api/wallet'],
   });
 
-  const { data: walletTransactions, isLoading: transactionsLoading } = useQuery({
-    queryKey: ["/api/wallet/transactions"],
-  });
+  // Extract wallet data from API response
+  const wallet = walletResponse?.data;
+
+  const { data: walletTransactionsResponse, isLoading: transactionsLoading } =
+    useQuery<{
+      success: boolean;
+      message: string;
+      data: any[];
+    }>({
+      queryKey: ['/api/wallet-history'],
+    });
+
+  // Extract transactions from API response
+  const walletTransactions = walletTransactionsResponse?.data || [];
 
   const addFundMutation = useMutation({
     mutationFn: async (data: { amount: string; paymentMethod: string }) => {
-      return await apiRequest("POST", "/api/wallet/add-fund", data);
+      const baseUrl =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      return await apiRequest('POST', `${baseUrl}/api/wallet/add-funds`, data);
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Funds added successfully!",
+        title: 'Success',
+        description: 'Funds added successfully!',
       });
-      setAddFundAmount("");
-      setPaymentMethod("");
+      setAddFundAmount('');
+      setPaymentMethod('');
       setIsAddFundOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet-history'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to add funds",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to add funds',
+        variant: 'destructive',
       });
     },
   });
 
   const withdrawFundMutation = useMutation({
     mutationFn: async (data: { amount: string }) => {
-      return await apiRequest("POST", "/api/wallet/withdraw", data);
+      const baseUrl =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      return await apiRequest(
+        'POST',
+        `${baseUrl}/api/wallet/withdraw-funds`,
+        data
+      );
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Withdrawal request submitted successfully!",
+        title: 'Success',
+        description: 'Withdrawal request submitted successfully!',
       });
-      setWithdrawAmount("");
+      setWithdrawAmount('');
       setIsWithdrawOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet-history'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to process withdrawal",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to process withdrawal',
+        variant: 'destructive',
       });
     },
   });
 
   const connectCbdcMutation = useMutation({
     mutationFn: async (data: { cbdcWalletId: string }) => {
-      return await apiRequest("POST", "/api/wallet/connect-cbdc", data);
+      const baseUrl =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      return await apiRequest(
+        'POST',
+        `${baseUrl}/api/wallet/connect-cbdc`,
+        data
+      );
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "CBDC wallet connected successfully!",
+        title: 'Success',
+        description: 'CBDC wallet connected successfully!',
       });
-      setCbdcWalletId("");
+      setCbdcWalletId('');
       setIsCbdcConnectOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to connect CBDC wallet",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to connect CBDC wallet',
+        variant: 'destructive',
       });
     },
   });
 
   const cbdcTransferMutation = useMutation({
-    mutationFn: async (data: { amount: string; transferType: 'deposit' | 'withdraw' }) => {
-      return await apiRequest("POST", "/api/wallet/cbdc-transfer", data);
+    mutationFn: async (data: {
+      amount: string;
+      transferType: 'deposit' | 'withdraw';
+    }) => {
+      return await apiRequest('POST', '/api/wallet/cbdc-transfer', data);
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "CBDC transfer completed successfully!",
+        title: 'Success',
+        description: 'CBDC transfer completed successfully!',
       });
-      setCbdcAmount("");
+      setCbdcAmount('');
       setIsCbdcTransferOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet-history'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to process CBDC transfer",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to process CBDC transfer',
+        variant: 'destructive',
       });
     },
   });
 
   const disconnectCbdcMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", "/api/wallet/disconnect-cbdc", {});
+      return await apiRequest('POST', '/api/wallet/disconnect-cbdc', {});
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "CBDC wallet disconnected successfully!",
+        title: 'Success',
+        description: 'CBDC wallet disconnected successfully!',
       });
       setIsCbdcDisconnectOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to disconnect CBDC wallet",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to disconnect CBDC wallet',
+        variant: 'destructive',
       });
     },
   });
@@ -171,38 +230,42 @@ export default function Wallet() {
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
-      case 'add_fund':
-        return <ArrowUpRight className="h-4 w-4 text-green-500" />;
+      case 'add_funds':
+        return <ArrowUpRight className='h-4 w-4 text-green-500' />;
       case 'withdraw_fund':
-        return <ArrowDownLeft className="h-4 w-4 text-red-500" />;
+        return <ArrowDownLeft className='h-4 w-4 text-red-500' />;
       case 'trading_credit':
-        return <TrendingUp className="h-4 w-4 text-green-500" />;
+        return <TrendingUp className='h-4 w-4 text-green-500' />;
       case 'trading_debit':
-        return <TrendingDown className="h-4 w-4 text-red-500" />;
+        return <TrendingDown className='h-4 w-4 text-red-500' />;
       case 'cbdc_deposit':
-        return <ArrowUpRight className="h-4 w-4 text-blue-500" />;
+        return <ArrowUpRight className='h-4 w-4 text-blue-500' />;
       case 'cbdc_withdraw':
-        return <ArrowDownLeft className="h-4 w-4 text-blue-500" />;
+        return <ArrowDownLeft className='h-4 w-4 text-blue-500' />;
       default:
-        return <DollarSign className="h-4 w-4 text-gray-500" />;
+        return <DollarSign className='h-4 w-4 text-gray-500' />;
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className='h-4 w-4 text-green-500' />;
       case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock className='h-4 w-4 text-yellow-500' />;
       case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className='h-4 w-4 text-red-500' />;
       default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+        return <Clock className='h-4 w-4 text-gray-500' />;
     }
   };
 
   const getTransactionColor = (type: string) => {
-    if (type === 'add_fund' || type === 'trading_credit' || type === 'cbdc_deposit') {
+    if (
+      type === 'add_funds' ||
+      type === 'trading_credit' ||
+      type === 'cbdc_deposit'
+    ) {
       return 'text-green-600';
     } else if (type === 'cbdc_deposit' || type === 'cbdc_withdraw') {
       return 'text-blue-600';
@@ -214,9 +277,9 @@ export default function Wallet() {
   const handleAddFund = () => {
     if (!addFundAmount || !paymentMethod) {
       toast({
-        title: "Error",
-        description: "Please enter amount and select payment method",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please enter amount and select payment method',
+        variant: 'destructive',
       });
       return;
     }
@@ -224,9 +287,9 @@ export default function Wallet() {
     const amount = parseFloat(addFundAmount);
     if (amount <= 0) {
       toast({
-        title: "Error",
-        description: "Invalid amount",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Invalid amount',
+        variant: 'destructive',
       });
       return;
     }
@@ -240,9 +303,9 @@ export default function Wallet() {
   const handleWithdraw = () => {
     if (!withdrawAmount) {
       toast({
-        title: "Error",
-        description: "Please enter withdrawal amount",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please enter withdrawal amount',
+        variant: 'destructive',
       });
       return;
     }
@@ -250,18 +313,18 @@ export default function Wallet() {
     const amount = parseFloat(withdrawAmount);
     if (amount <= 0) {
       toast({
-        title: "Error",
-        description: "Invalid amount",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Invalid amount',
+        variant: 'destructive',
       });
       return;
     }
 
-    if (wallet && parseFloat((wallet as any).balance) < amount) {
+    if (wallet && parseFloat(wallet.balance.toString()) < amount) {
       toast({
-        title: "Error",
-        description: "Insufficient balance",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Insufficient balance',
+        variant: 'destructive',
       });
       return;
     }
@@ -274,9 +337,9 @@ export default function Wallet() {
   const handleConnectCbdc = () => {
     if (!cbdcWalletId) {
       toast({
-        title: "Error",
-        description: "Please enter CBDC wallet ID",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please enter CBDC wallet ID',
+        variant: 'destructive',
       });
       return;
     }
@@ -289,9 +352,9 @@ export default function Wallet() {
   const handleCbdcTransfer = (transferType: 'deposit' | 'withdraw') => {
     if (!cbdcAmount) {
       toast({
-        title: "Error",
-        description: "Please enter amount",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please enter amount',
+        variant: 'destructive',
       });
       return;
     }
@@ -299,18 +362,22 @@ export default function Wallet() {
     const amount = parseFloat(cbdcAmount);
     if (amount <= 0) {
       toast({
-        title: "Error",
-        description: "Invalid amount",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Invalid amount',
+        variant: 'destructive',
       });
       return;
     }
 
-    if (transferType === 'withdraw' && wallet && parseFloat((wallet as any).cbdcBalance || '0') < amount) {
+    if (
+      transferType === 'withdraw' &&
+      wallet &&
+      parseFloat(wallet.cbdcBalance.toString()) < amount
+    ) {
       toast({
-        title: "Error",
-        description: "Insufficient CBDC balance",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Insufficient CBDC balance',
+        variant: 'destructive',
       });
       return;
     }
@@ -326,30 +393,32 @@ export default function Wallet() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className='min-h-screen bg-gray-50'>
       <Header />
-      
-      <div className="flex">
+
+      <div className='flex'>
         <Sidebar />
-        
-        <main className="flex-1 p-6">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Wallet</h1>
-            <p className="text-gray-600">Manage your funds, add money, and view transaction history</p>
+
+        <main className='flex-1 p-6'>
+          <div className='mb-8'>
+            <h1 className='text-3xl font-bold text-gray-900 mb-2'>Wallet</h1>
+            <p className='text-gray-600'>
+              Manage your funds, add money, and view transaction history
+            </p>
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className='grid grid-cols-1 md:grid-cols-4 gap-6 mb-8'>
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <WalletIcon className="h-6 w-6 text-blue-600" />
+              <CardContent className='p-6'>
+                <div className='flex items-center space-x-4'>
+                  <div className='w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center'>
+                    <WalletIcon className='h-6 w-6 text-blue-600' />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Current Balance</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {wallet ? formatCurrency((wallet as any).balance) : "₹0.00"}
+                    <p className='text-sm text-gray-600'>Current Balance</p>
+                    <p className='text-2xl font-bold text-gray-900'>
+                      {wallet ? formatCurrency(wallet.balance) : '₹0.00'}
                     </p>
                   </div>
                 </div>
@@ -357,18 +426,21 @@ export default function Wallet() {
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-6 w-6 text-green-600" />
+              <CardContent className='p-6'>
+                <div className='flex items-center space-x-4'>
+                  <div className='w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center'>
+                    <TrendingUp className='h-6 w-6 text-green-600' />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Total Added</p>
-                    <p className="text-2xl font-bold text-green-600">
+                    <p className='text-sm text-gray-600'>Total Added</p>
+                    <p className='text-2xl font-bold text-green-600'>
                       {formatCurrency(
-                        (walletTransactions as any[])
-                          ?.filter((t: any) => t.transactionType === 'add_fund' && t.status === 'completed')
-                          ?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0
+                        walletTransactions
+                          ?.filter((t: any) => t.historyType === 'add_funds')
+                          ?.reduce(
+                            (sum: number, t: any) => sum + parseFloat(t.amount),
+                            0
+                          ) || 0
                       )}
                     </p>
                   </div>
@@ -377,18 +449,25 @@ export default function Wallet() {
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                    <TrendingDown className="h-6 w-6 text-red-600" />
+              <CardContent className='p-6'>
+                <div className='flex items-center space-x-4'>
+                  <div className='w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center'>
+                    <TrendingDown className='h-6 w-6 text-red-600' />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Total Withdrawn</p>
-                    <p className="text-2xl font-bold text-red-600">
+                    <p className='text-sm text-gray-600'>Total Withdrawn</p>
+                    <p className='text-2xl font-bold text-red-600'>
                       {formatCurrency(
-                        (walletTransactions as any[])
-                          ?.filter((t: any) => t.transactionType === 'withdraw_fund' && t.status === 'completed')
-                          ?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0
+                        walletTransactions
+                          ?.filter(
+                            (t: any) =>
+                              t.transactionType === 'withdraw_fund' &&
+                              t.status === 'completed'
+                          )
+                          ?.reduce(
+                            (sum: number, t: any) => sum + parseFloat(t.amount),
+                            0
+                          ) || 0
                       )}
                     </p>
                   </div>
@@ -397,18 +476,20 @@ export default function Wallet() {
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <CreditCard className="h-6 w-6 text-blue-600" />
+              <CardContent className='p-6'>
+                <div className='flex items-center space-x-4'>
+                  <div className='w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center'>
+                    <CreditCard className='h-6 w-6 text-blue-600' />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">CBDC Balance</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {wallet ? formatCurrency((wallet as any).cbdcBalance || 0) : "₹0.00"}
+                    <p className='text-sm text-gray-600'>CBDC Balance</p>
+                    <p className='text-2xl font-bold text-blue-600'>
+                      {wallet ? formatCurrency(wallet.cbdcBalance) : '₹0.00'}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      {wallet && (wallet as any).cbdcWalletConnected ? "Connected" : "Not Connected"}
+                    <p className='text-xs text-gray-500'>
+                      {wallet && wallet.cbdcConnected
+                        ? 'Connected'
+                        : 'Not Connected'}
                     </p>
                   </div>
                 </div>
@@ -416,17 +497,17 @@ export default function Wallet() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
             {/* Quick Actions */}
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className='space-y-4'>
                 <Dialog open={isAddFundOpen} onOpenChange={setIsAddFundOpen}>
                   <DialogTrigger asChild>
-                    <Button className="w-full" size="lg">
-                      <Plus className="mr-2 h-4 w-4" />
+                    <Button className='w-full' size='lg'>
+                      <Plus className='mr-2 h-4 w-4' />
                       Add Funds
                     </Button>
                   </DialogTrigger>
@@ -434,37 +515,48 @@ export default function Wallet() {
                     <DialogHeader>
                       <DialogTitle>Add Funds to Wallet</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className='space-y-4'>
                       <div>
-                        <Label htmlFor="amount">Amount</Label>
+                        <Label htmlFor='amount'>Amount</Label>
                         <Input
-                          id="amount"
-                          type="number"
-                          placeholder="Enter amount"
+                          id='amount'
+                          type='number'
+                          placeholder='Enter amount'
                           value={addFundAmount}
                           onChange={(e) => setAddFundAmount(e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label htmlFor="payment-method">Payment Method</Label>
-                        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                        <Label htmlFor='payment-method'>Payment Method</Label>
+                        <Select
+                          value={paymentMethod}
+                          onValueChange={setPaymentMethod}
+                        >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select payment method" />
+                            <SelectValue placeholder='Select payment method' />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="upi">UPI</SelectItem>
-                            <SelectItem value="netbanking">Net Banking</SelectItem>
-                            <SelectItem value="card">Debit/Credit Card</SelectItem>
-                            <SelectItem value="wallet">Digital Wallet</SelectItem>
+                            <SelectItem value='upi'>UPI</SelectItem>
+                            <SelectItem value='netbanking'>
+                              Net Banking
+                            </SelectItem>
+                            <SelectItem value='card'>
+                              Debit/Credit Card
+                            </SelectItem>
+                            <SelectItem value='wallet'>
+                              Digital Wallet
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                      <Button 
+                      <Button
                         onClick={handleAddFund}
                         disabled={addFundMutation.isPending}
-                        className="w-full"
+                        className='w-full'
                       >
-                        {addFundMutation.isPending ? "Processing..." : "Add Funds"}
+                        {addFundMutation.isPending
+                          ? 'Processing...'
+                          : 'Add Funds'}
                       </Button>
                     </div>
                   </DialogContent>
@@ -472,8 +564,8 @@ export default function Wallet() {
 
                 <Dialog open={isWithdrawOpen} onOpenChange={setIsWithdrawOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full" size="lg">
-                      <Minus className="mr-2 h-4 w-4" />
+                    <Button variant='outline' className='w-full' size='lg'>
+                      <Minus className='mr-2 h-4 w-4' />
                       Withdraw Funds
                     </Button>
                   </DialogTrigger>
@@ -481,166 +573,203 @@ export default function Wallet() {
                     <DialogHeader>
                       <DialogTitle>Withdraw Funds</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className='space-y-4'>
                       <div>
-                        <Label htmlFor="withdraw-amount">Amount</Label>
+                        <Label htmlFor='withdraw-amount'>Amount</Label>
                         <Input
-                          id="withdraw-amount"
-                          type="number"
-                          placeholder="Enter amount"
+                          id='withdraw-amount'
+                          type='number'
+                          placeholder='Enter amount'
                           value={withdrawAmount}
                           onChange={(e) => setWithdrawAmount(e.target.value)}
                         />
-                        <p className="text-sm text-gray-500 mt-1">
-                          Available: {wallet ? formatCurrency((wallet as any).balance) : "₹0.00"}
+                        <p className='text-sm text-gray-500 mt-1'>
+                          Available:{' '}
+                          {wallet ? formatCurrency(wallet.balance) : '₹0.00'}
                         </p>
                       </div>
-                      <Button 
+                      <Button
                         onClick={handleWithdraw}
                         disabled={withdrawFundMutation.isPending}
-                        className="w-full"
-                        variant="destructive"
+                        className='w-full'
+                        variant='destructive'
                       >
-                        {withdrawFundMutation.isPending ? "Processing..." : "Withdraw Funds"}
+                        {withdrawFundMutation.isPending
+                          ? 'Processing...'
+                          : 'Withdraw Funds'}
                       </Button>
                     </div>
                   </DialogContent>
                 </Dialog>
 
                 {/* CBDC Connect/Disconnect */}
-                {wallet && (wallet as any).cbdcWalletConnected ? (
-                  <Dialog open={isCbdcDisconnectOpen} onOpenChange={setIsCbdcDisconnectOpen}>
+                {wallet && wallet.cbdcConnected ? (
+                  <Dialog
+                    open={isCbdcDisconnectOpen}
+                    onOpenChange={setIsCbdcDisconnectOpen}
+                  >
                     <DialogTrigger asChild>
-                      <Button 
-                        variant="destructive"
-                        size="lg" 
-                        className="w-full"
+                      <Button
+                        variant='destructive'
+                        size='lg'
+                        className='w-full'
                       >
-                        <CreditCard className="mr-2 h-4 w-4" />
+                        <CreditCard className='mr-2 h-4 w-4' />
                         Disconnect CBDC
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Disconnect CBDC Wallet</DialogTitle>
-                        <p className="text-sm text-gray-600">Are you sure you want to disconnect your CBDC wallet? This will disable digital currency transfers.</p>
+                        <p className='text-sm text-gray-600'>
+                          Are you sure you want to disconnect your CBDC wallet?
+                          This will disable digital currency transfers.
+                        </p>
                       </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                          <p className="text-sm text-yellow-800">
-                            <strong>Warning:</strong> After disconnecting, your CBDC balance will remain but you won't be able to transfer funds until you reconnect.
+                      <div className='space-y-4'>
+                        <div className='bg-yellow-50 border border-yellow-200 rounded-lg p-4'>
+                          <p className='text-sm text-yellow-800'>
+                            <strong>Warning:</strong> After disconnecting, your
+                            CBDC balance will remain but you won't be able to
+                            transfer funds until you reconnect.
                           </p>
                         </div>
-                        <div className="flex space-x-4">
-                          <Button 
-                            variant="outline"
+                        <div className='flex space-x-4'>
+                          <Button
+                            variant='outline'
                             onClick={() => setIsCbdcDisconnectOpen(false)}
-                            className="flex-1"
+                            className='flex-1'
                           >
                             Cancel
                           </Button>
-                          <Button 
+                          <Button
                             onClick={handleDisconnectCbdc}
                             disabled={disconnectCbdcMutation.isPending}
-                            variant="destructive"
-                            className="flex-1"
+                            variant='destructive'
+                            className='flex-1'
                           >
-                            {disconnectCbdcMutation.isPending ? "Disconnecting..." : "Disconnect"}
+                            {disconnectCbdcMutation.isPending
+                              ? 'Disconnecting...'
+                              : 'Disconnect'}
                           </Button>
                         </div>
                       </div>
                     </DialogContent>
                   </Dialog>
                 ) : (
-                  <Dialog open={isCbdcConnectOpen} onOpenChange={setIsCbdcConnectOpen}>
+                  <Dialog
+                    open={isCbdcConnectOpen}
+                    onOpenChange={setIsCbdcConnectOpen}
+                  >
                     <DialogTrigger asChild>
-                      <Button 
-                        variant="default"
-                        size="lg" 
-                        className="w-full"
-                      >
-                        <CreditCard className="mr-2 h-4 w-4" />
+                      <Button variant='default' size='lg' className='w-full'>
+                        <CreditCard className='mr-2 h-4 w-4' />
                         Connect CBDC
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Connect CBDC Wallet</DialogTitle>
-                        <p className="text-sm text-gray-600">Link your Central Bank Digital Currency wallet to enable digital currency transactions</p>
+                        <p className='text-sm text-gray-600'>
+                          Link your Central Bank Digital Currency wallet to
+                          enable digital currency transactions
+                        </p>
                       </DialogHeader>
-                      <div className="space-y-4">
+                      <div className='space-y-4'>
                         <div>
-                          <Label htmlFor="cbdc-wallet-id">CBDC Wallet ID</Label>
+                          <Label htmlFor='cbdc-wallet-id'>CBDC Wallet ID</Label>
                           <Input
-                            id="cbdc-wallet-id"
-                            type="text"
-                            placeholder="Enter your CBDC wallet ID"
+                            id='cbdc-wallet-id'
+                            type='text'
+                            placeholder='Enter your CBDC wallet ID'
                             value={cbdcWalletId}
                             onChange={(e) => setCbdcWalletId(e.target.value)}
                           />
-                          <p className="text-xs text-gray-500 mt-1">Format: CBDC-XXXX-XXXX-XXXX</p>
+                          <p className='text-xs text-gray-500 mt-1'>
+                            Format: CBDC-XXXX-XXXX-XXXX
+                          </p>
                         </div>
-                        <Button 
+                        <Button
                           onClick={handleConnectCbdc}
                           disabled={connectCbdcMutation.isPending}
-                          className="w-full"
+                          className='w-full'
                         >
-                          {connectCbdcMutation.isPending ? "Connecting..." : "Connect CBDC Wallet"}
+                          {connectCbdcMutation.isPending
+                            ? 'Connecting...'
+                            : 'Connect CBDC Wallet'}
                         </Button>
                       </div>
                     </DialogContent>
                   </Dialog>
                 )}
 
-                <Dialog open={isCbdcTransferOpen} onOpenChange={setIsCbdcTransferOpen}>
+                <Dialog
+                  open={isCbdcTransferOpen}
+                  onOpenChange={setIsCbdcTransferOpen}
+                >
                   <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="lg" 
-                      className="w-full"
-                      disabled={!wallet || !(wallet as any).cbdcWalletConnected}
+                    <Button
+                      variant='outline'
+                      size='lg'
+                      className='w-full'
+                      disabled={!wallet || !wallet.cbdcConnected}
                     >
-                      <ArrowUpRight className="mr-2 h-4 w-4" />
+                      <ArrowUpRight className='mr-2 h-4 w-4' />
                       CBDC Transfer
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>CBDC Transfer</DialogTitle>
-                      <p className="text-sm text-gray-600">Transfer funds between your CBDC wallet and regular wallet</p>
+                      <p className='text-sm text-gray-600'>
+                        Transfer funds between your CBDC wallet and regular
+                        wallet
+                      </p>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className='space-y-4'>
                       <div>
-                        <Label htmlFor="cbdc-amount">Amount</Label>
+                        <Label htmlFor='cbdc-amount'>Amount</Label>
                         <Input
-                          id="cbdc-amount"
-                          type="number"
-                          placeholder="Enter amount"
+                          id='cbdc-amount'
+                          type='number'
+                          placeholder='Enter amount'
                           value={cbdcAmount}
                           onChange={(e) => setCbdcAmount(e.target.value)}
                         />
-                        <div className="flex justify-between text-xs text-gray-500 mt-1">
-                          <span>Wallet Balance: {wallet ? formatCurrency((wallet as any).balance) : "₹0.00"}</span>
-                          <span>CBDC Balance: {wallet ? formatCurrency((wallet as any).cbdcBalance || 0) : "₹0.00"}</span>
+                        <div className='flex justify-between text-xs text-gray-500 mt-1'>
+                          <span>
+                            Wallet Balance:{' '}
+                            {wallet ? formatCurrency(wallet.balance) : '₹0.00'}
+                          </span>
+                          <span>
+                            CBDC Balance:{' '}
+                            {wallet
+                              ? formatCurrency(wallet.cbdcBalance)
+                              : '₹0.00'}
+                          </span>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Button 
+                      <div className='grid grid-cols-2 gap-4'>
+                        <Button
                           onClick={() => handleCbdcTransfer('deposit')}
                           disabled={cbdcTransferMutation.isPending}
-                          className="w-full"
+                          className='w-full'
                         >
-                          <ArrowUpRight className="mr-2 h-4 w-4" />
-                          {cbdcTransferMutation.isPending ? "Processing..." : "Deposit to CBDC"}
+                          <ArrowUpRight className='mr-2 h-4 w-4' />
+                          {cbdcTransferMutation.isPending
+                            ? 'Processing...'
+                            : 'Deposit to CBDC'}
                         </Button>
-                        <Button 
+                        <Button
                           onClick={() => handleCbdcTransfer('withdraw')}
                           disabled={cbdcTransferMutation.isPending}
-                          variant="outline"
-                          className="w-full"
+                          variant='outline'
+                          className='w-full'
                         >
-                          <ArrowDownLeft className="mr-2 h-4 w-4" />
-                          {cbdcTransferMutation.isPending ? "Processing..." : "Withdraw from CBDC"}
+                          <ArrowDownLeft className='mr-2 h-4 w-4' />
+                          {cbdcTransferMutation.isPending
+                            ? 'Processing...'
+                            : 'Withdraw from CBDC'}
                         </Button>
                       </div>
                     </div>
@@ -650,44 +779,76 @@ export default function Wallet() {
             </Card>
 
             {/* Transaction History */}
-            <Card className="lg:col-span-2">
+            <Card className='lg:col-span-2'>
               <CardHeader>
                 <CardTitle>Transaction History</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className='space-y-4'>
                   {transactionsLoading ? (
-                    <p className="text-center text-gray-500">Loading transactions...</p>
-                  ) : (walletTransactions as any[])?.length === 0 ? (
-                    <p className="text-center text-gray-500">No transactions yet</p>
+                    <p className='text-center text-gray-500'>
+                      Loading transactions...
+                    </p>
+                  ) : walletTransactions?.length === 0 ? (
+                    <p className='text-center text-gray-500'>
+                      No transactions yet
+                    </p>
                   ) : (
-                    <div className="max-h-96 overflow-y-auto">
-                      {(walletTransactions as any[])?.map((transaction: any) => (
-                        <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex items-center space-x-4">
+                    <div className='max-h-96 overflow-y-auto'>
+                      {walletTransactions?.map((transaction: any) => (
+                        <div
+                          key={transaction.id}
+                          className='flex items-center justify-between p-4 border rounded-lg'
+                        >
+                          <div className='flex items-center space-x-4'>
                             {getTransactionIcon(transaction.transactionType)}
                             <div>
-                              <p className="font-medium">
-                                {transaction.transactionType.replace('_', ' ').toUpperCase()}
+                              <p className='font-medium'>
+                                {transaction?.transactionType
+                                  ?.replace('_', ' ')
+                                  .toUpperCase()}
                               </p>
-                              <p className="text-sm text-gray-500">
-                                {new Date(transaction.createdAt).toLocaleDateString()} at {' '}
-                                {new Date(transaction.createdAt).toLocaleTimeString()}
+                              <p className='text-sm text-gray-500'>
+                                {new Date(
+                                  transaction.createdAt
+                                ).toLocaleDateString()}{' '}
+                                at{' '}
+                                {new Date(
+                                  transaction.createdAt
+                                ).toLocaleTimeString()}
                               </p>
                               {transaction.description && (
-                                <p className="text-sm text-gray-600">{transaction.description}</p>
+                                <p className='text-sm text-gray-600'>
+                                  {transaction.description}
+                                </p>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center space-x-3">
-                            <div className="text-right">
-                              <p className={`font-semibold ${getTransactionColor(transaction.transactionType)}`}>
-                                {(transaction.transactionType === 'add_fund' || transaction.transactionType === 'trading_credit' || transaction.transactionType === 'cbdc_withdraw') ? '+' : '-'}
+                          <div className='flex items-center space-x-3'>
+                            <div className='text-right'>
+                              <p
+                                className={`font-semibold ${getTransactionColor(
+                                  transaction.historyType
+                                )}`}
+                              >
+                                {transaction.historyType === 'add_funds' ||
+                                transaction.historyType === 'trading_credit' ||
+                                transaction.historyType === 'cbdc_withdraw'
+                                  ? '+'
+                                  : '-'}
                                 {formatCurrency(transaction.amount)}
                               </p>
-                              <div className="flex items-center space-x-1">
+                              <div className='flex items-center space-x-1'>
                                 {getStatusIcon(transaction.status)}
-                                <Badge variant={transaction.status === 'completed' ? 'default' : transaction.status === 'pending' ? 'secondary' : 'destructive'}>
+                                <Badge
+                                  variant={
+                                    transaction.status === 'completed'
+                                      ? 'default'
+                                      : transaction.status === 'pending'
+                                      ? 'secondary'
+                                      : 'destructive'
+                                  }
+                                >
                                   {transaction.status}
                                 </Badge>
                               </div>

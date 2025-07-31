@@ -1,18 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Bell, Coins, ChevronDown, User } from "lucide-react";
+import { Bell, Coins, ChevronDown, User, LogOut, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Header() {
-  // Demo user data (no authentication required)
-  const demoUser = {
-    firstName: "Demo",
-    lastName: "Investor", 
-    email: "demo@investor.com",
-    investorId: "INV-DEMO-001",
-    profileImageUrl: null
-  };
+  const { user, logout } = useAuth();
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
@@ -44,16 +38,16 @@ export default function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-3 px-3 py-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={demoUser.profileImageUrl || ""} alt="User Avatar" />
+                    <AvatarImage src={user?.profileImageUrl || ""} alt="User Avatar" />
                     <AvatarFallback>
-                      {demoUser.firstName.charAt(0)}
+                      {user?.firstName?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="text-sm text-left">
                     <p className="font-medium text-gray-900">
-                      {`${demoUser.firstName} ${demoUser.lastName}`}
+                      {`${user?.firstName || ""} ${user?.lastName || ""}`}
                     </p>
-                    <p className="text-gray-500">{demoUser.investorId}</p>
+                    <p className="text-gray-500">{user?.investorId || ""}</p>
                   </div>
                   <ChevronDown className="h-4 w-4 text-gray-400" />
                 </Button>
@@ -62,6 +56,18 @@ export default function Header() {
                 <DropdownMenuItem className="flex items-center">
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="flex items-center text-red-600"
+                  onClick={logout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

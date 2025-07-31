@@ -19,7 +19,7 @@ export default function Landing() {
               </div>
             </div>
             
-            <Button onClick={() => window.location.href = '/dashboard'} className="bg-primary hover:bg-blue-700">
+            <Button onClick={() => window.location.href = '/login'} className="bg-primary hover:bg-blue-700">
               Login to Continue
             </Button>
           </div>
@@ -38,7 +38,7 @@ export default function Landing() {
           </p>
           <Button 
             size="lg" 
-            onClick={() => window.location.href = '/dashboard'}
+            onClick={() => window.location.href = '/login'}
             className="bg-primary hover:bg-blue-700 px-8 py-3 text-lg"
           >
             Get Started Today
@@ -165,7 +165,7 @@ export default function Landing() {
           </p>
           <Button 
             size="lg" 
-            onClick={() => window.location.href = '/dashboard'}
+            onClick={() => window.location.href = '/login'}
             className="bg-primary hover:bg-blue-700 px-8 py-3 text-lg"
           >
             Start Trading Now

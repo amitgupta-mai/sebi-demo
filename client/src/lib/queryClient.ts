@@ -1,84 +1,110 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import {
-  mockCompanies,
-  mockUser,
-  mockHoldings,
-  mockTokenizedShares,
-  mockOrders,
-  mockTransactions,
-  mockWallet,
-  mockWalletTransactions,
-  mockPortfolioSummary,
-  mockMarketData,
-} from "./mockData";
+import { QueryClient, QueryFunction, QueryKey } from '@tanstack/react-query';
 
-// Mock API request function
+// Function to get current user ID from cookies
+const getCurrentUserId = () => {
+  try {
+    const userData = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('userData='))
+      ?.split('=')[1];
+
+    if (userData) {
+      const user = JSON.parse(decodeURIComponent(userData));
+      return user.id;
+    }
+  } catch (error) {
+    console.error('Error parsing user data:', error);
+  }
+  return null;
+};
+
+// Get access token from cookies
+const getAccessToken = () => {
+  return document.cookie
+    .split('; ')
+    .find((row) => row.startsWith('accessToken='))
+    ?.split('=')[1];
+};
+
+// Real API request function
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: unknown | undefined
 ): Promise<Response> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  // Return a mock response
-  const mockResponse = {
-    ok: true,
-    status: 200,
-    json: async () => ({ success: true, message: "Mock operation completed" }),
-  } as Response;
-  
-  return mockResponse;
+  const accessToken = getAccessToken();
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: data ? JSON.stringify(data) : undefined,
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const text = (await res.text()) || res.statusText;
+    throw new Error(`${res.status}: ${text}`);
+  }
+
+  return res;
 }
 
-type UnauthorizedBehavior = "returnNull" | "throw";
+type UnauthorizedBehavior = 'returnNull' | 'throw';
 
-// Mock query function that returns appropriate data based on the query key
+// Real query function that makes API calls
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    const queryPath = queryKey.join("/") as string;
-    
-    // Return appropriate mock data based on the query path
-    switch (queryPath) {
-      case "/api/companies":
-        return mockCompanies as T;
-      case "/api/auth/user":
-        return mockUser as T;
-      case "/api/holdings":
-        return mockHoldings as T;
-      case "/api/tokenized-shares":
-        return mockTokenizedShares as T;
-      case "/api/orders":
-        return mockOrders as T;
-      case "/api/transactions":
-        return mockTransactions as T;
-      case "/api/wallet":
-        return mockWallet as T;
-      case "/api/wallet/transactions":
-        return mockWalletTransactions as T;
-      case "/api/portfolio/summary":
-        return mockPortfolioSummary as T;
-      case "/api/market-data":
-        return mockMarketData as T;
-      default:
-        throw new Error(`No mock data available for: ${queryPath}`);
+  async ({ queryKey }: { queryKey: QueryKey }) => {
+    const queryPath = queryKey.join('/') as string;
+
+    // Add base URL to the query path
+    const baseUrl =
+      import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    const fullUrl = `${baseUrl}${queryPath}`;
+
+    const res = await fetch(fullUrl, {
+      credentials: 'include',
+      headers: {
+        Authorization: `Bearer ${getAccessToken() || ''}`,
+      },
+    });
+
+    if (unauthorizedBehavior === 'returnNull' && res.status === 401) {
+      return null;
     }
+
+    if (!res.ok) {
+      const text = (await res.text()) || res.statusText;
+      throw new Error(`${res.status}: ${text}`);
+    }
+
+    return await res.json();
   };
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
+      queryFn: getQueryFn({ on401: 'throw' }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      staleTime: 30000, // 30 seconds
+      retry: (failureCount, error) => {
+        // Don't retry on 401/403 errors
+        if (error instanceof Error && error.message.includes('401')) {
+          return false;
+        }
+        return failureCount < 3;
+      },
     },
     mutations: {
       retry: false,
