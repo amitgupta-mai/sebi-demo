@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,18 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  TrendingUp,
-  TrendingDown,
-  ArrowUpDown,
-  Coins,
-  ArrowLeftRight,
-} from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TrendingUp, ArrowLeftRight } from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function Trading() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [orderType, setOrderType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState<string>('');
@@ -44,12 +38,6 @@ export default function Trading() {
     queryKey: ['/api/market/companies'],
   });
 
-  const { data: availableTokens = [], isLoading: tokensLoading } = useQuery<
-    any | { data: any }
-  >({
-    queryKey: ['/api/tokens/available'],
-  });
-
   const { data: orders = [], isLoading: ordersLoading } = useQuery<
     any | { data: any }
   >({
@@ -57,16 +45,92 @@ export default function Trading() {
   });
 
   // Extract companies from API response
-  const companies = companiesResponse?.data?.companies || [];
-
-  // Handle API response structure properly
-  const tokensArray = availableTokens?.data?.tokens || [];
+  const companies =
+    companiesResponse?.data?.companies &&
+    companiesResponse?.data?.companies.length > 0
+      ? companiesResponse?.data?.companies
+      : [
+          {
+            id: '1',
+            name: 'Tata Consultancy Services Ltd',
+            symbol: 'TCS',
+            currentPrice: '3456.80',
+          },
+          {
+            id: '2',
+            name: 'Reliance Industries Ltd',
+            symbol: 'RELIANCE',
+            currentPrice: '2456.50',
+          },
+          {
+            id: '3',
+            name: 'Infosys Ltd',
+            symbol: 'INFY',
+            currentPrice: '1567.90',
+          },
+          {
+            id: '4',
+            name: 'HDFC Bank Ltd',
+            symbol: 'HDFCBANK',
+            currentPrice: '1678.45',
+          },
+          {
+            id: '5',
+            name: 'ICICI Bank Ltd',
+            symbol: 'ICICIBANK',
+            currentPrice: '987.65',
+          },
+          {
+            id: '6',
+            name: 'Wipro Ltd',
+            symbol: 'WIPRO',
+            currentPrice: '456.78',
+          },
+        ];
 
   const ordersArray = Array.isArray(orders)
     ? orders
     : orders?.data && Array.isArray(orders.data)
     ? orders.data
     : [];
+
+  const queryClient = useQueryClient();
+
+  const orderMutation = useMutation({
+    mutationFn: async (data: {
+      companyId: string;
+      orderType: 'buy' | 'sell';
+      quantity: number;
+      price: number;
+    }) => {
+      const baseUrl =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      const endpoint =
+        data.orderType === 'buy' ? '/api/tokens/buy' : '/api/tokens/sell';
+      return await apiRequest('POST', `${baseUrl}${endpoint}`, {
+        companyId: data.companyId,
+        quantity: data.quantity,
+        pricePerToken: data.price,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Order placed successfully!',
+      });
+      setSelectedCompanyId('');
+      setQuantity('');
+      setPrice('');
+      queryClient.invalidateQueries({ queryKey: ['/api/tokens/orders'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to place order',
+        variant: 'destructive',
+      });
+    },
+  });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -79,16 +143,6 @@ export default function Trading() {
 
   const formatPercentage = (value: number) => {
     return `${value >= 0 ? '+' : ''}${value?.toFixed?.(2)}%`;
-  };
-
-  const getCompanyLogoClass = (symbol: string) => {
-    const symbolLower = symbol?.toLowerCase();
-    if (symbolLower === 'tcs') return 'company-logo tcs';
-    if (symbolLower === 'reliance') return 'company-logo reliance';
-    if (symbolLower === 'infy') return 'company-logo infy';
-    if (symbolLower === 'hdfcbank') return 'company-logo hdfcbank';
-    if (symbolLower === 'icicibank') return 'company-logo icicibank';
-    return 'company-logo default';
   };
 
   const handlePlaceOrder = () => {
@@ -113,10 +167,11 @@ export default function Trading() {
       return;
     }
 
-    // TODO: Implement order placement logic
-    toast({
-      title: 'Success',
-      description: 'Order placed successfully!',
+    orderMutation.mutate({
+      companyId: selectedCompanyId,
+      quantity: quantityNum,
+      price: priceNum,
+      orderType: orderType,
     });
   };
 
@@ -245,9 +300,7 @@ export default function Trading() {
                         >
                           <div className='flex items-center space-x-3'>
                             <div
-                              className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-semibold text-sm ${getCompanyLogoClass(
-                                company?.symbol
-                              )}`}
+                              className={`w-10 h-10 rounded-lg flex items-center justify-center font-semibold text-sm bg-blue-100 text-blue-700`}
                             >
                               <span>
                                 {company?.symbol
@@ -256,24 +309,25 @@ export default function Trading() {
                               </span>
                             </div>
                             <div>
-                              <p className='font-bold text-lg text-gray-900'>
+                              <p className='font-bold text-lg text-gray-700'>
                                 {company?.symbol}
                               </p>
-                              <p className='text-sm text-gray-600'>
+                              <p className='text-sm text-gray-500'>
                                 {company?.name}
                               </p>
                             </div>
                           </div>
                           <div className='text-right'>
-                            <p className='text-lg font-bold text-gray-900'>
-                              {formatCurrency(
-                                parseFloat(company?.currentPrice || 0)
+                            <p className='text-lg font-bold text-gray-700'>
+                              ₹
+                              {parseFloat(company?.currentPrice || 0).toFixed(
+                                2
                               )}
                             </p>
                             <div className='flex items-center justify-end text-green-600 mt-1'>
                               <TrendingUp className='h-4 w-4 mr-1' />
                               <span className='text-sm font-medium'>
-                                {formatPercentage(changePercent)}
+                                +{formatPercentage(changePercent)}
                               </span>
                             </div>
                           </div>

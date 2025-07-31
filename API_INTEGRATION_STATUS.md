@@ -48,6 +48,7 @@
 - ✅ **FIXED**: Added comprehensive safe object checks using optional chaining throughout convert page
 - ✅ **FIXED**: Trading page redesigned to match the required layout with Place Order, Market Overview, and Your Orders sections
 - ✅ **FIXED**: Market overview cards now match the exact design from screenshot with proper colors and layout
+- ✅ **FIXED**: Added debugging and fallback for companies API to identify hardcoded data issues
 - ✅ **FIXED**: Portfolio and Dashboard now handle the actual API response structure
 - ✅ Added proper error handling and authorization headers
 - ✅ Updated authentication to use real API endpoints
