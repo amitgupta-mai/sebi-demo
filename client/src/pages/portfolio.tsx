@@ -110,12 +110,6 @@ export default function Portfolio() {
   const shares = holdingsData?.shares || [];
   const tokens = holdingsData?.tokens || [];
 
-  // Debug logging to see what data we're getting
-  console.log('holdingsDataResponse:', holdingsDataResponse);
-  console.log('holdingsData:', holdingsData);
-  console.log('shares:', shares);
-  console.log('tokens:', tokens);
-
   const allHoldings = [
     ...shares.map((holding: any) => ({
       ...holding,
@@ -155,11 +149,8 @@ export default function Portfolio() {
 
   // Filter out holdings without company data and add debugging
   const validHoldings = allHoldings.filter((holding, index) => {
-    console.log(`Holding ${index}:`, holding);
     return holding.company && holding.company.symbol;
   });
-
-  console.log('validHoldings:', validHoldings);
 
   const totalPnL = allHoldings.reduce((sum, holding) => sum + holding.pnl, 0);
   const totalInvested = allHoldings.reduce(

@@ -98,12 +98,6 @@ export default function Dashboard() {
   const shares = holdingsData?.shares || [];
   const tokens = holdingsData?.tokens || [];
 
-  // Debug logging to see what data we're getting
-  console.log('holdingsDataResponse:', holdingsDataResponse);
-  console.log('holdingsData:', holdingsData);
-  console.log('shares:', shares);
-  console.log('tokens:', tokens);
-
   const allHoldings = [
     ...shares.map((holding: any) => ({
       ...holding,

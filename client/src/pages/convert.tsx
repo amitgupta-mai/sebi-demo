@@ -28,7 +28,7 @@ export default function Convert() {
   const { data: tokenizedSharesResponse, isLoading: tokensLoading } = useQuery<{
     success: boolean;
     message: string;
-    data: any[];
+    data: any;
   }>({
     queryKey: ['/api/tokens/available-for-conversion'],
   });
@@ -49,10 +49,6 @@ export default function Convert() {
 
   // Extract companies from API response
   const companies = companiesResponse?.data?.companies || [];
-
-  // Debug logging to see what data we're getting
-  console.log('tokenizedSharesResponse:', tokenizedSharesResponse);
-  console.log('tokenizedShares:', tokenizedShares);
 
   const convertMutation = useMutation({
     mutationFn: async (data: {

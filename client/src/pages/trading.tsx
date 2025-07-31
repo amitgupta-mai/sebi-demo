@@ -47,8 +47,6 @@ export default function Trading() {
   // Handle API response structure properly
   const tokensArray = availableTokens?.data?.tokens;
 
-  console.log(tokensArray, 'tokensArray');
-
   const ordersArray = Array.isArray(orders)
     ? orders
     : orders?.data && Array.isArray(orders.data)
