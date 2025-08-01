@@ -38,7 +38,6 @@ export default function Market() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [orderType, setOrderType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState<string>('');
-  const [price, setPrice] = useState<string>('');
   const [chartTimeframe, setChartTimeframe] = useState<string>('1D');
 
   const { data: companiesResponse, isLoading: companiesLoading } = useQuery<{
@@ -134,7 +133,6 @@ export default function Market() {
       });
       setSelectedCompanyId('');
       setQuantity('');
-      setPrice('');
       queryClient.invalidateQueries({ queryKey: ['/api/tokens/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/tokens/available'] });
     },
@@ -160,6 +158,23 @@ export default function Market() {
     if (volume >= 100000) return `${(volume / 100000).toFixed(1)}L`;
     if (volume >= 1000) return `${(volume / 1000).toFixed(1)}K`;
     return volume.toString();
+  };
+
+  const formatLargeNumber = (value: string | number | undefined) => {
+    if (!value) return '0';
+
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+
+    // Check for invalid or extremely large numbers
+    if (isNaN(num) || !isFinite(num) || num < 0) return '0';
+
+    // Handle different scales
+    if (num >= 1e12) return `${(num / 1e12).toFixed(1)}T`;
+    if (num >= 1e9) return `${(num / 1e9).toFixed(1)}B`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(1)}M`;
+    if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
+
+    return num.toFixed(1);
   };
 
   const getPriceChangeClass = (change: number) => {
@@ -213,12 +228,11 @@ export default function Market() {
     }
 
     const quantityNum = parseInt(quantity);
-    const priceNum = parseFloat(price);
 
-    if (quantityNum <= 0 || priceNum <= 0) {
+    if (quantityNum <= 0) {
       toast({
         title: 'Error',
-        description: 'Invalid quantity or price',
+        description: 'Invalid quantity',
         variant: 'destructive',
       });
       return;
@@ -245,7 +259,10 @@ export default function Market() {
       tokenId: tokenizedShare?.id || '',
       orderType,
       quantity: quantityNum,
-      price,
+      price:
+        availableCompanies.find(
+          (company: any) => company.id === selectedCompanyId
+        )?.currentPrice || '0',
     });
   };
 
@@ -301,13 +318,7 @@ export default function Market() {
                           <div>
                             <p className='text-sm text-gray-600'>Market Cap</p>
                             <p className='text-lg font-semibold'>
-                              ₹
-                              {marketStats?.totalMarketCap
-                                ? (
-                                    parseFloat(marketStats.totalMarketCap) /
-                                    1000000000000
-                                  ).toFixed(1) + 'T'
-                                : '0T'}
+                              ₹{formatLargeNumber(marketStats?.totalMarketCap)}T
                             </p>
                           </div>
                         </div>
@@ -321,13 +332,7 @@ export default function Market() {
                           <div>
                             <p className='text-sm text-gray-600'>24h Volume</p>
                             <p className='text-lg font-semibold'>
-                              ₹
-                              {marketStats?.totalVolume
-                                ? (
-                                    parseFloat(marketStats.totalVolume) /
-                                    1000000000
-                                  ).toFixed(1) + 'B'
-                                : '0B'}
+                              ₹{formatLargeNumber(marketStats?.totalVolume)}B
                             </p>
                           </div>
                         </div>
@@ -454,7 +459,7 @@ export default function Market() {
                                     {formatVolume(volume)}
                                   </td>
                                   <td className='text-right py-3 px-4 text-gray-600'>
-                                    ₹{(marketCap / 10000000).toFixed(1)}Cr
+                                    ₹{formatLargeNumber(marketCap)}Cr
                                   </td>
                                   <td className='text-center py-3 px-4'>
                                     <Button
@@ -601,7 +606,7 @@ export default function Market() {
                 <CardHeader>
                   <CardTitle className='flex items-center'>
                     <IndianRupee className='mr-2 h-5 w-5' />
-                    Quick Trade
+                    Place Order
                   </CardTitle>
                 </CardHeader>
                 <CardContent className='space-y-4'>
@@ -631,12 +636,25 @@ export default function Market() {
                         <SelectValue placeholder='Choose a company' />
                       </SelectTrigger>
                       <SelectContent>
-                        {allCompanies.map((company: any) => (
-                          <SelectItem key={company.id} value={company.id}>
-                            {company.name} -{' '}
-                            {formatCurrency(parseFloat(company.currentPrice))}
+                        {tokensLoading || companiesLoading ? (
+                          <SelectItem value='loading' disabled>
+                            <DataLoading text='Loading companies...' />
                           </SelectItem>
-                        ))}
+                        ) : availableCompanies &&
+                          availableCompanies.length > 0 ? (
+                          availableCompanies.map((company: any) => (
+                            <SelectItem key={company?.id} value={company?.id}>
+                              {company?.name} ({company?.symbol}) -{' '}
+                              {formatCurrency(
+                                parseFloat(company?.currentPrice)
+                              )}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value='no-companies' disabled>
+                            No companies available
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -652,19 +670,6 @@ export default function Market() {
                     />
                   </div>
 
-                  {selectedCompany && quantity && price && (
-                    <div className='p-3 bg-gray-50 rounded-lg'>
-                      <div className='text-sm text-gray-600 mb-1'>
-                        Total Value
-                      </div>
-                      <div className='text-lg font-semibold'>
-                        {formatCurrency(
-                          parseFloat(quantity) * parseFloat(price)
-                        )}
-                      </div>
-                    </div>
-                  )}
-
                   <Button
                     onClick={handlePlaceOrder}
                     disabled={createOrderMutation.isPending}
@@ -673,7 +678,7 @@ export default function Market() {
                   >
                     {createOrderMutation.isPending
                       ? 'Placing Order...'
-                      : `${orderType === 'buy' ? 'Buy' : 'Sell'} Tokens`}
+                      : `Place ${orderType.toUpperCase()} Order`}
                   </Button>
                 </CardContent>
               </Card>
