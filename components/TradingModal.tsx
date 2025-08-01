@@ -70,7 +70,6 @@ export default function TradingModal({
         });
         setTimeout(() => {
           // Handle authentication in mock mode
-          console.log('Mock authentication required');
         }, 500);
         return;
       }

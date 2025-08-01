@@ -112,9 +112,6 @@ export default function Dashboard() {
   const tokens = holdingsData?.tokens || [];
   const allHoldings = [...shares, ...tokens];
 
-  console.log('Portfolio Summary Response:', portfolioSummaryResponse);
-  console.log('Holdings Data Response:', holdingsDataResponse);
-
   const getCompanyLogoClass = (symbol: string) => {
     const symbolLower = symbol.toLowerCase();
     if (symbolLower === 'tcs') return 'company-logo tcs';

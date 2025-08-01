@@ -159,8 +159,7 @@ export default function Portfolio() {
   // Get unique companies from holdings
   const uniqueCompanies = getUniqueCompanies(validHoldings);
 
-  console.log('Unique Companies:', uniqueCompanies);
-  console.log('Total Unique Companies:', uniqueCompanies.length);
+
 
   const totalPnL = allHoldings.reduce((sum, holding) => sum + holding.pnl, 0);
   const totalInvested = allHoldings.reduce(

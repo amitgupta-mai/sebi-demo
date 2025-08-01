@@ -75,15 +75,7 @@ export default function Trading() {
       : availableTokensResponse?.data?.tokens || [];
   const allCompanies = companiesResponse?.data?.companies || [];
 
-  // Debug logging
-  console.log('Current Tab:', orderType);
-  console.log(
-    'Available Tokens (from',
-    orderType === 'buy' ? 'market' : 'available',
-    '):',
-    availableTokens
-  );
-  console.log('All Companies:', allCompanies);
+
 
   // Extract unique companies that have available tokens
   const companies = allCompanies.filter((company) =>
@@ -297,49 +289,70 @@ export default function Trading() {
                   <CardTitle>Market Overview</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                    {tokensLoading || companiesLoading ? (
-                      <DataLoading text='Loading market data...' />
-                    ) : companies && companies.length > 0 ? (
-                      companies.map((company: any) => (
+                  {tokensLoading || companiesLoading ? (
+                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                      {[1, 2, 3, 4, 5, 6].map((index) => (
                         <div
-                          key={company.id}
+                          key={index}
                           className='border border-gray-200 rounded-lg p-4'
                         >
                           <div className='flex items-center space-x-3 mb-2'>
-                            <div
-                              className={getCompanyLogoClass(company.symbol)}
-                            >
-                              <span>
-                                {company.symbol.substring(0, 3).toUpperCase()}
-                              </span>
-                            </div>
-                            <div>
-                              <h4 className='font-medium text-gray-900'>
-                                {company.symbol}
-                              </h4>
-                              <p className='text-xs text-gray-500'>
-                                {company.name}
-                              </p>
+                            <div className='w-8 h-8 bg-gray-200 rounded-full animate-pulse' />
+                            <div className='flex-1'>
+                              <div className='h-4 bg-gray-200 rounded animate-pulse mb-1' />
+                              <div className='h-3 bg-gray-200 rounded animate-pulse' />
                             </div>
                           </div>
                           <div className='text-right'>
-                            <p className='text-lg font-bold text-gray-900'>
-                              {formatCurrency(parseFloat(company.currentPrice))}
-                            </p>
-                            <p className='text-sm text-green-600 flex items-center justify-end'>
-                              <TrendingUp className='w-3 h-3 mr-1' />
-                              +2.5%
-                            </p>
+                            <div className='h-5 bg-gray-200 rounded animate-pulse mb-1' />
+                            <div className='h-3 bg-gray-200 rounded animate-pulse' />
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className='col-span-3 text-center py-4 text-gray-500'>
-                        No market data available
-                      </div>
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                      {companies && companies.length > 0 ? (
+                        companies.map((company: any) => (
+                          <div
+                            key={company.id}
+                            className='border border-gray-200 rounded-lg p-4'
+                          >
+                            <div className='flex items-center space-x-3 mb-2'>
+                              <div
+                                className={getCompanyLogoClass(company.symbol)}
+                              >
+                                <span>
+                                  {company.symbol.substring(0, 3).toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <h4 className='font-medium text-gray-900'>
+                                  {company.symbol}
+                                </h4>
+                                <p className='text-xs text-gray-500'>
+                                  {company.name}
+                                </p>
+                              </div>
+                            </div>
+                            <div className='text-right'>
+                              <p className='text-lg font-bold text-gray-900'>
+                                {formatCurrency(parseFloat(company.currentPrice))}
+                              </p>
+                              <p className='text-sm text-green-600 flex items-center justify-end'>
+                                <TrendingUp className='w-3 h-3 mr-1' />
+                                +2.5%
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className='col-span-3 text-center py-8 text-gray-500'>
+                          No market data available
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -350,7 +363,23 @@ export default function Trading() {
                 </CardHeader>
                 <CardContent>
                   {ordersLoading ? (
-                    <DataLoading text='Loading orders...' />
+                    <div className='space-y-4'>
+                      {[1, 2, 3].map((index) => (
+                        <div
+                          key={index}
+                          className='flex items-center justify-between p-4 bg-gray-50 rounded-lg'
+                        >
+                          <div className='flex-1'>
+                            <div className='h-4 bg-gray-200 rounded animate-pulse mb-2' />
+                            <div className='h-3 bg-gray-200 rounded animate-pulse' />
+                          </div>
+                          <div className='text-right'>
+                            <div className='h-4 bg-gray-200 rounded animate-pulse mb-2' />
+                            <div className='h-6 bg-gray-200 rounded animate-pulse w-16' />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : ordersArray && ordersArray.length > 0 ? (
                     <div className='space-y-4'>
                       {ordersArray.map((order: any) => (

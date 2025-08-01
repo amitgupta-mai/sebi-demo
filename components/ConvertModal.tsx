@@ -44,7 +44,6 @@ export default function ConvertModal({ isOpen, onClose, tokenizedShare }: Conver
         });
         setTimeout(() => {
           // Handle authentication in mock mode
-        console.log("Mock authentication required");
         }, 500);
         return;
       }

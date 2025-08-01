@@ -105,12 +105,6 @@ export default function Market() {
     []
   );
 
-  // Debug: Log the API response
-  console.log('Market Overview API Response:', marketDataResponse);
-  console.log('Market Stats:', marketStats);
-  console.log('All Companies:', allCompanies);
-  console.log('Available Companies for Trading:', availableCompanies);
-
   const createOrderMutation = useMutation({
     mutationFn: async (data: {
       companyId: string;
@@ -282,72 +276,93 @@ export default function Market() {
             <div className='xl:col-span-2 space-y-6'>
               {/* Market Stats */}
               <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-                <Card>
-                  <CardContent className='p-4'>
-                    <div className='flex items-center space-x-2'>
-                      <Activity className='h-5 w-5 text-blue-500' />
-                      <div>
-                        <p className='text-sm text-gray-600'>Market Cap</p>
-                        <p className='text-lg font-semibold'>
-                          ₹
-                          {marketStats?.totalMarketCap
-                            ? (
-                                parseFloat(marketStats.totalMarketCap) /
-                                1000000000000
-                              ).toFixed(1) + 'T'
-                            : '0T'}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                {marketLoading ? (
+                  <>
+                    {[1, 2, 3, 4].map((index) => (
+                      <Card key={index}>
+                        <CardContent className='p-4'>
+                          <div className='flex items-center space-x-2'>
+                            <div className='h-5 w-5 bg-gray-200 rounded animate-pulse' />
+                            <div className='flex-1'>
+                              <div className='h-4 bg-gray-200 rounded animate-pulse mb-2' />
+                              <div className='h-6 bg-gray-200 rounded animate-pulse' />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <Card>
+                      <CardContent className='p-4'>
+                        <div className='flex items-center space-x-2'>
+                          <Activity className='h-5 w-5 text-blue-500' />
+                          <div>
+                            <p className='text-sm text-gray-600'>Market Cap</p>
+                            <p className='text-lg font-semibold'>
+                              ₹
+                              {marketStats?.totalMarketCap
+                                ? (
+                                    parseFloat(marketStats.totalMarketCap) /
+                                    1000000000000
+                                  ).toFixed(1) + 'T'
+                                : '0T'}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card>
-                  <CardContent className='p-4'>
-                    <div className='flex items-center space-x-2'>
-                      <Volume2 className='h-5 w-5 text-green-500' />
-                      <div>
-                        <p className='text-sm text-gray-600'>24h Volume</p>
-                        <p className='text-lg font-semibold'>
-                          ₹
-                          {marketStats?.totalVolume
-                            ? (
-                                parseFloat(marketStats.totalVolume) / 1000000000
-                              ).toFixed(1) + 'B'
-                            : '0B'}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    <Card>
+                      <CardContent className='p-4'>
+                        <div className='flex items-center space-x-2'>
+                          <Volume2 className='h-5 w-5 text-green-500' />
+                          <div>
+                            <p className='text-sm text-gray-600'>24h Volume</p>
+                            <p className='text-lg font-semibold'>
+                              ₹
+                              {marketStats?.totalVolume
+                                ? (
+                                    parseFloat(marketStats.totalVolume) /
+                                    1000000000
+                                  ).toFixed(1) + 'B'
+                                : '0B'}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card>
-                  <CardContent className='p-4'>
-                    <div className='flex items-center space-x-2'>
-                      <TrendingUp className='h-5 w-5 text-green-500' />
-                      <div>
-                        <p className='text-sm text-gray-600'>Gainers</p>
-                        <p className='text-lg font-semibold text-green-600'>
-                          {marketStats?.gainers || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    <Card>
+                      <CardContent className='p-4'>
+                        <div className='flex items-center space-x-2'>
+                          <TrendingUp className='h-5 w-5 text-green-500' />
+                          <div>
+                            <p className='text-sm text-gray-600'>Gainers</p>
+                            <p className='text-lg font-semibold text-green-600'>
+                              {marketStats?.gainers || 0}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card>
-                  <CardContent className='p-4'>
-                    <div className='flex items-center space-x-2'>
-                      <TrendingDown className='h-5 w-5 text-red-500' />
-                      <div>
-                        <p className='text-sm text-gray-600'>Losers</p>
-                        <p className='text-lg font-semibold text-red-600'>
-                          {marketStats?.losers || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    <Card>
+                      <CardContent className='p-4'>
+                        <div className='flex items-center space-x-2'>
+                          <TrendingDown className='h-5 w-5 text-red-500' />
+                          <div>
+                            <p className='text-sm text-gray-600'>Losers</p>
+                            <p className='text-lg font-semibold text-red-600'>
+                              {marketStats?.losers || 0}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
               </div>
 
               {/* Market Table */}
@@ -359,97 +374,116 @@ export default function Market() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className='overflow-x-auto'>
-                    <table className='w-full'>
-                      <thead>
-                        <tr className='border-b'>
-                          <th className='text-left py-3 px-4 font-medium text-gray-600'>
-                            Company
-                          </th>
-                          <th className='text-right py-3 px-4 font-medium text-gray-600'>
-                            Price
-                          </th>
-                          <th className='text-right py-3 px-4 font-medium text-gray-600'>
-                            Change
-                          </th>
-                          <th className='text-right py-3 px-4 font-medium text-gray-600'>
-                            Volume
-                          </th>
-                          <th className='text-right py-3 px-4 font-medium text-gray-600'>
-                            Market Cap
-                          </th>
-                          <th className='text-center py-3 px-4 font-medium text-gray-600'>
-                            Action
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {allCompanies.map((company: any) => {
-                          const currentPrice = parseFloat(company.currentPrice);
-                          const previousClose = parseFloat(
-                            company.previousClose
-                          );
-                          const priceChange = company.priceChange;
-                          const changePercent = parseFloat(
-                            company.changePercentage
-                          );
-                          const volume = parseInt(company.volume);
-                          const marketCap = parseFloat(company.marketCap);
+                  {marketLoading ? (
+                    <div className='flex items-center justify-center py-12'>
+                      <DataLoading text='Loading market data...' />
+                    </div>
+                  ) : (
+                    <div className='overflow-x-auto'>
+                      <table className='w-full'>
+                        <thead>
+                          <tr className='border-b'>
+                            <th className='text-left py-3 px-4 font-medium text-gray-600'>
+                              Company
+                            </th>
+                            <th className='text-right py-3 px-4 font-medium text-gray-600'>
+                              Price
+                            </th>
+                            <th className='text-right py-3 px-4 font-medium text-gray-600'>
+                              Change
+                            </th>
+                            <th className='text-right py-3 px-4 font-medium text-gray-600'>
+                              Volume
+                            </th>
+                            <th className='text-right py-3 px-4 font-medium text-gray-600'>
+                              Market Cap
+                            </th>
+                            <th className='text-center py-3 px-4 font-medium text-gray-600'>
+                              Action
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {allCompanies.length > 0 ? (
+                            allCompanies.map((company: any) => {
+                              const currentPrice = parseFloat(
+                                company.currentPrice
+                              );
+                              const previousClose = parseFloat(
+                                company.previousClose
+                              );
+                              const priceChange = company.priceChange;
+                              const changePercent = parseFloat(
+                                company.changePercentage
+                              );
+                              const volume = parseInt(company.volume);
+                              const marketCap = parseFloat(company.marketCap);
 
-                          return (
-                            <tr
-                              key={company.id}
-                              className='border-b hover:bg-gray-50'
-                            >
-                              <td className='py-3 px-4'>
-                                <div>
-                                  <div className='font-medium'>
-                                    {company.name}
-                                  </div>
-                                  <div className='text-sm text-gray-600'>
-                                    {company.symbol}
-                                  </div>
-                                </div>
-                              </td>
-                              <td className='text-right py-3 px-4 font-medium'>
-                                {formatCurrency(currentPrice)}
-                              </td>
-                              <td
-                                className={`text-right py-3 px-4 ${getPriceChangeClass(
-                                  priceChange
-                                )}`}
-                              >
-                                <div className='flex items-center justify-end space-x-1'>
-                                  {getPriceChangeIcon(priceChange)}
-                                  <span>
-                                    {changePercent >= 0 ? '+' : ''}
-                                    {changePercent.toFixed(2)}%
-                                  </span>
-                                </div>
-                              </td>
-                              <td className='text-right py-3 px-4 text-gray-600'>
-                                {formatVolume(volume)}
-                              </td>
-                              <td className='text-right py-3 px-4 text-gray-600'>
-                                ₹{(marketCap / 10000000).toFixed(1)}Cr
-                              </td>
-                              <td className='text-center py-3 px-4'>
-                                <Button
-                                  size='sm'
-                                  onClick={() =>
-                                    setSelectedCompanyId(company.id)
-                                  }
-                                  variant='outline'
+                              return (
+                                <tr
+                                  key={company.id}
+                                  className='border-b hover:bg-gray-50'
                                 >
-                                  Trade
-                                </Button>
+                                  <td className='py-3 px-4'>
+                                    <div>
+                                      <div className='font-medium'>
+                                        {company.name}
+                                      </div>
+                                      <div className='text-sm text-gray-600'>
+                                        {company.symbol}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className='text-right py-3 px-4 font-medium'>
+                                    {formatCurrency(currentPrice)}
+                                  </td>
+                                  <td
+                                    className={`text-right py-3 px-4 ${getPriceChangeClass(
+                                      priceChange
+                                    )}`}
+                                  >
+                                    <div className='flex items-center justify-end space-x-1'>
+                                      {getPriceChangeIcon(priceChange)}
+                                      <span>
+                                        {changePercent >= 0 ? '+' : ''}
+                                        {changePercent.toFixed(2)}%
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className='text-right py-3 px-4 text-gray-600'>
+                                    {formatVolume(volume)}
+                                  </td>
+                                  <td className='text-right py-3 px-4 text-gray-600'>
+                                    ₹{(marketCap / 10000000).toFixed(1)}Cr
+                                  </td>
+                                  <td className='text-center py-3 px-4'>
+                                    <Button
+                                      size='sm'
+                                      onClick={() =>
+                                        setSelectedCompanyId(company.id)
+                                      }
+                                      variant='outline'
+                                    >
+                                      Trade
+                                    </Button>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          ) : (
+                            <tr>
+                              <td
+                                colSpan={6}
+                                className='text-center py-8 text-gray-500'
+                              >
+                                No market data available
                               </td>
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
