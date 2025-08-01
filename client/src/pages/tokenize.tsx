@@ -326,12 +326,15 @@ export default function Tokenize() {
                     disabled={
                       !selectedHolding ||
                       !quantity ||
-                      tokenizeMutation.isPending
+                      tokenizeMutation.isPending ||
+                      (selectedHolding && selectedHolding.quantity === 0)
                     }
                     className='flex-1 bg-primary hover:bg-blue-700'
                   >
                     {tokenizeMutation.isPending
                       ? 'Processing...'
+                      : selectedHolding && selectedHolding.quantity === 0
+                      ? 'No Shares Available'
                       : 'Tokenize Shares'}
                   </Button>
                 </div>

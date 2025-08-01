@@ -9,12 +9,26 @@ import { TrendingUp, Tag, Coins, ArrowRightLeft, ChartPie } from 'lucide-react';
 import { Link } from 'wouter';
 
 interface PortfolioSummary {
-  totalValue?: number;
-  realSharesValue?: number;
-  tokenizedSharesValue?: number;
-  totalHoldings?: number;
-  totalTokens?: number;
-  activeOrders?: number;
+  totalPortfolioValue: string;
+  totalSharesValue: number;
+  totalTokensValue: number;
+  cashBalance: string;
+  totalProfitLoss: number;
+  totalSharesProfitLoss: number;
+  totalTokensProfitLoss: number;
+  totalHoldings: number;
+  sharesCount: number;
+  tokensCount: number;
+}
+
+interface HoldingsData {
+  shares: any[];
+  tokens: any[];
+  summary?: {
+    totalSharesValue: number;
+    totalTokensValue: number;
+    totalValue: number;
+  };
 }
 
 interface Transaction {
@@ -29,20 +43,37 @@ interface Transaction {
 }
 
 export default function Dashboard() {
-  const { data: portfolioSummary = {}, isLoading: summaryLoading } =
-    useQuery<PortfolioSummary>({
+  const { data: portfolioSummaryResponse, isLoading: summaryLoading } =
+    useQuery<{
+      success: boolean;
+      message: string;
+      data: PortfolioSummary;
+    }>({
       queryKey: ['/api/portfolio/overview'],
     });
 
-  const { data: holdings = [], isLoading: holdingsLoading } = useQuery<any[]>({
+  const { data: holdingsDataResponse, isLoading: holdingsLoading } = useQuery<{
+    success: boolean;
+    message: string;
+    data: HoldingsData;
+  }>({
     queryKey: ['/api/portfolio/holdings'],
   });
 
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery<
-    Transaction[]
-  >({
-    queryKey: ['/api/transactions'],
-  });
+  const { data: transactionsResponse, isLoading: transactionsLoading } =
+    useQuery<{
+      success: boolean;
+      message: string;
+      data: Transaction[];
+    }>({
+      queryKey: ['/api/transactions'],
+    });
+
+  // Extract data from API responses
+  const portfolioSummary =
+    (portfolioSummaryResponse?.data as PortfolioSummary) || {};
+  const holdingsData = holdingsDataResponse?.data;
+  const transactions = transactionsResponse?.data || [];
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -52,6 +83,25 @@ export default function Dashboard() {
       maximumFractionDigits: 0,
     }).format(amount);
   };
+
+  // Function to safely parse malformed numeric values from API
+  const safeParseNumber = (value: any): number => {
+    if (typeof value === 'number') return value;
+    if (!value || typeof value !== 'string') return 0;
+
+    // Remove any non-numeric characters except decimal point and minus
+    const cleaned = value.replace(/[^\d.-]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  // Extract shares and tokens from holdings data
+  const shares = holdingsData?.shares || [];
+  const tokens = holdingsData?.tokens || [];
+  const allHoldings = [...shares, ...tokens];
+
+  console.log('Portfolio Summary Response:', portfolioSummaryResponse);
+  console.log('Holdings Data Response:', holdingsDataResponse);
 
   const getCompanyLogoClass = (symbol: string) => {
     const symbolLower = symbol.toLowerCase();
@@ -83,7 +133,11 @@ export default function Dashboard() {
                     <p className='text-2xl font-bold text-gray-900'>
                       {summaryLoading
                         ? '...'
-                        : formatCurrency(portfolioSummary?.totalValue || 0)}
+                        : formatCurrency(
+                            safeParseNumber(
+                              portfolioSummary?.totalPortfolioValue
+                            )
+                          )}
                     </p>
                     <p className='text-sm text-secondary mt-1'>
                       <TrendingUp className='inline w-4 h-4 mr-1' />
@@ -108,7 +162,7 @@ export default function Dashboard() {
                       {summaryLoading
                         ? '...'
                         : formatCurrency(
-                            portfolioSummary?.realSharesValue || 0
+                            portfolioSummary?.totalSharesValue || 0
                           )}
                     </p>
                     <p className='text-sm text-gray-500 mt-1'>
@@ -135,13 +189,13 @@ export default function Dashboard() {
                       {summaryLoading
                         ? '...'
                         : formatCurrency(
-                            portfolioSummary?.tokenizedSharesValue || 0
+                            portfolioSummary?.totalTokensValue || 0
                           )}
                     </p>
                     <p className='text-sm text-gray-500 mt-1'>
                       {summaryLoading
                         ? '...'
-                        : `${portfolioSummary?.totalTokens || 0} tokens`}
+                        : `${portfolioSummary?.tokensCount || 0} tokens`}
                     </p>
                   </div>
                   <div className='w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center'>
@@ -159,9 +213,7 @@ export default function Dashboard() {
                       Active Orders
                     </p>
                     <p className='text-2xl font-bold text-gray-900'>
-                      {summaryLoading
-                        ? '...'
-                        : portfolioSummary?.activeOrders || 0}
+                      {summaryLoading ? '...' : '0'}
                     </p>
                     <p className='text-sm text-destructive mt-1'>
                       Pending execution
@@ -228,8 +280,8 @@ export default function Dashboard() {
 
           {/* Holdings Table */}
           <HoldingsTable
-            holdings={holdings}
-            tokenizedShares={holdings?.tokens}
+            holdings={allHoldings}
+            tokenizedShares={tokens}
             loading={holdingsLoading}
           />
 
@@ -264,7 +316,7 @@ export default function Dashboard() {
                                 : transaction.transactionType === 'trade_buy'
                                 ? 'Bought'
                                 : 'Sold'}{' '}
-                              {transaction.company.symbol}
+                              {transaction.company?.symbol || 'Unknown'}
                             </p>
                             <p className='text-xs text-gray-500'>
                               {new Date(

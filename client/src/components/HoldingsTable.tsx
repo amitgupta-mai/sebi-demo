@@ -1,10 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
-import { Tag, Coins, TrendingUp, TrendingDown, Briefcase } from "lucide-react";
-import TokenizeModal from "./TokenizeModal";
-import ConvertModal from "./ConvertModal";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
+import { Tag, Coins, TrendingUp, TrendingDown, Briefcase } from 'lucide-react';
+import TokenizeModal from './TokenizeModal';
+import ConvertModal from './ConvertModal';
 
 interface HoldingsTableProps {
   holdings: any[];
@@ -12,8 +12,12 @@ interface HoldingsTableProps {
   loading: boolean;
 }
 
-export default function HoldingsTable({ holdings, tokenizedShares, loading }: HoldingsTableProps) {
-  const [filter, setFilter] = useState<"all" | "shares" | "tokens">("all");
+export default function HoldingsTable({
+  holdings,
+  tokenizedShares,
+  loading,
+}: HoldingsTableProps) {
+  const [filter, setFilter] = useState<'all' | 'shares' | 'tokens'>('all');
   const [tokenizeModalOpen, setTokenizeModalOpen] = useState(false);
   const [convertModalOpen, setConvertModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -37,7 +41,11 @@ export default function HoldingsTable({ holdings, tokenizedShares, loading }: Ho
     return 'company-logo default';
   };
 
-  const calculatePnL = (currentPrice: number, averagePrice: number, quantity: number) => {
+  const calculatePnL = (
+    currentPrice: number,
+    averagePrice: number,
+    quantity: number
+  ) => {
     const currentValue = currentPrice * quantity;
     const investedValue = averagePrice * quantity;
     const pnl = currentValue - investedValue;
@@ -57,39 +65,53 @@ export default function HoldingsTable({ holdings, tokenizedShares, loading }: Ho
 
   // Combine holdings and tokenized shares for display
   const allItems = [
-    ...(holdings || []).map(holding => ({
+    ...(holdings || []).map((holding) => ({
       ...holding,
       type: 'share',
-      currentValue: parseFloat(holding.company.currentPrice) * holding.quantity,
+      company: {
+        name: holding.companyName || holding.company?.name,
+        symbol: holding.companySymbol || holding.company?.symbol,
+        currentPrice: holding.currentPrice || holding.company?.currentPrice,
+      },
+      currentValue:
+        parseFloat(holding.currentPrice || holding.company?.currentPrice || 0) *
+        holding.quantity,
       ...calculatePnL(
-        parseFloat(holding.company.currentPrice),
-        parseFloat(holding.averagePrice),
+        parseFloat(holding.currentPrice || holding.company?.currentPrice || 0),
+        parseFloat(holding.averagePrice || 0),
         holding.quantity
-      )
+      ),
     })),
-    ...(tokenizedShares || []).map(token => ({
+    ...(tokenizedShares || []).map((token) => ({
       ...token,
       type: 'token',
-      currentValue: parseFloat(token.company.currentPrice) * token.quantity,
+      company: {
+        name: token.companyName || token.company?.name,
+        symbol: token.companySymbol || token.company?.symbol,
+        currentPrice: token.currentPrice || token.company?.currentPrice,
+      },
+      currentValue:
+        parseFloat(token.currentPrice || token.company?.currentPrice || 0) *
+        token.quantity,
       ...calculatePnL(
-        parseFloat(token.company.currentPrice),
-        parseFloat(token.tokenizationPrice),
+        parseFloat(token.currentPrice || token.company?.currentPrice || 0),
+        parseFloat(token.averagePrice || 0),
         token.quantity
-      )
-    }))
+      ),
+    })),
   ];
 
-  const filteredItems = allItems.filter(item => {
-    if (filter === "shares") return item.type === "share";
-    if (filter === "tokens") return item.type === "token";
+  const filteredItems = allItems.filter((item) => {
+    if (filter === 'shares') return item.type === 'share';
+    if (filter === 'tokens') return item.type === 'token';
     return true;
   });
 
   if (loading) {
     return (
       <Card>
-        <CardContent className="p-6">
-          <div className="text-center py-8">Loading holdings...</div>
+        <CardContent className='p-6'>
+          <div className='text-center py-8'>Loading holdings...</div>
         </CardContent>
       </Card>
     );
@@ -99,43 +121,45 @@ export default function HoldingsTable({ holdings, tokenizedShares, loading }: Ho
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold text-gray-900">My Holdings</CardTitle>
-            <div className="flex space-x-2">
+          <div className='flex items-center justify-between'>
+            <CardTitle className='text-lg font-semibold text-gray-900'>
+              My Holdings
+            </CardTitle>
+            <div className='flex space-x-2'>
               <Button
-                variant={filter === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter("all")}
+                variant={filter === 'all' ? 'default' : 'outline'}
+                size='sm'
+                onClick={() => setFilter('all')}
               >
                 All
               </Button>
               <Button
-                variant={filter === "shares" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter("shares")}
+                variant={filter === 'shares' ? 'default' : 'outline'}
+                size='sm'
+                onClick={() => setFilter('shares')}
               >
                 Real Shares
               </Button>
               <Button
-                variant={filter === "tokens" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter("tokens")}
+                variant={filter === 'tokens' ? 'default' : 'outline'}
+                size='sm'
+                onClick={() => setFilter('tokens')}
               >
                 Tokens
               </Button>
             </div>
           </div>
         </CardHeader>
-        
-        <CardContent className="p-0">
+
+        <CardContent className='p-0'>
           {filteredItems.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Briefcase className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+            <div className='text-center py-8 text-gray-500'>
+              <Briefcase className='mx-auto h-12 w-12 text-gray-300 mb-4' />
               <p>No holdings found</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="holdings-table">
+            <div className='overflow-x-auto'>
+              <table className='holdings-table'>
                 <thead>
                   <tr>
                     <th>Company</th>
@@ -149,71 +173,100 @@ export default function HoldingsTable({ holdings, tokenizedShares, loading }: Ho
                 </thead>
                 <tbody>
                   {filteredItems.map((item, index) => (
-                    <tr key={`${item.type}-${item.companyId}-${index}`} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={`${item.type}-${item.companyId}-${index}`}
+                      className='hover:bg-gray-50 transition-colors'
+                    >
                       <td>
-                        <div className="flex items-center">
-                          <div className={`${getCompanyLogoClass(item.company.symbol)} mr-3`}>
-                            <span>{item.company.symbol.substring(0, 3).toUpperCase()}</span>
+                        <div className='flex items-center'>
+                          <div
+                            className={`${getCompanyLogoClass(
+                              item.company?.symbol || 'DEFAULT'
+                            )} mr-3`}
+                          >
+                            <span>
+                              {(item.company?.symbol || 'N/A')
+                                .substring(0, 3)
+                                .toUpperCase()}
+                            </span>
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{item.company.name}</div>
-                            <div className="text-sm text-gray-500">NSE: {item.company.symbol}</div>
+                            <div className='text-sm font-medium text-gray-900'>
+                              {item.company?.name || 'Unknown Company'}
+                            </div>
+                            <div className='text-sm text-gray-500'>
+                              NSE: {item.company?.symbol || 'N/A'}
+                            </div>
                           </div>
                         </div>
                       </td>
                       <td>
-                        <Badge 
-                          variant={item.type === 'share' ? 'default' : 'secondary'}
-                          className={item.type === 'share' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}
+                        <Badge
+                          variant={
+                            item.type === 'share' ? 'default' : 'secondary'
+                          }
+                          className={
+                            item.type === 'share'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-orange-100 text-orange-800'
+                          }
                         >
                           {item.type === 'share' ? (
                             <>
-                              <Tag className="mr-1 h-3 w-3" />
+                              <Tag className='mr-1 h-3 w-3' />
                               Real Share
                             </>
                           ) : (
                             <>
-                              <Coins className="mr-1 h-3 w-3" />
+                              <Coins className='mr-1 h-3 w-3' />
                               Token
                             </>
                           )}
                         </Badge>
                       </td>
-                      <td className="text-sm text-gray-900">{item.quantity}</td>
-                      <td className="text-sm text-gray-900">
-                        {formatCurrency(parseFloat(item.company.currentPrice))}
+                      <td className='text-sm text-gray-900'>{item.quantity}</td>
+                      <td className='text-sm text-gray-900'>
+                        {formatCurrency(
+                          parseFloat(item.company?.currentPrice || 0)
+                        )}
                       </td>
-                      <td className="text-sm text-gray-900">
+                      <td className='text-sm text-gray-900'>
                         {formatCurrency(item.currentValue)}
                       </td>
                       <td>
-                        <div className={`text-sm flex items-center ${item.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div
+                          className={`text-sm flex items-center ${
+                            item.pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}
+                        >
                           {item.pnl >= 0 ? (
-                            <TrendingUp className="w-3 h-3 mr-1" />
+                            <TrendingUp className='w-3 h-3 mr-1' />
                           ) : (
-                            <TrendingDown className="w-3 h-3 mr-1" />
+                            <TrendingDown className='w-3 h-3 mr-1' />
                           )}
                           <span>
-                            {item.pnl >= 0 ? '+' : ''}{formatCurrency(item.pnl)} ({item.pnlPercentage.toFixed(1)}%)
+                            {item.pnl >= 0 ? '+' : ''}
+                            {formatCurrency(item.pnl)} (
+                            {item.pnlPercentage.toFixed(1)}%)
                           </span>
                         </div>
                       </td>
                       <td>
-                        <div className="flex space-x-2">
+                        <div className='flex space-x-2'>
                           {item.type === 'share' ? (
                             <>
                               <Button
-                                variant="link"
-                                size="sm"
+                                variant='link'
+                                size='sm'
                                 onClick={() => handleTokenize(item)}
-                                className="text-primary hover:text-blue-700 p-0 h-auto font-medium"
+                                className='text-primary hover:text-blue-700 p-0 h-auto font-medium'
                               >
                                 Tokenize
                               </Button>
                               <Button
-                                variant="link"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 p-0 h-auto font-medium"
+                                variant='link'
+                                size='sm'
+                                className='text-red-600 hover:text-red-700 p-0 h-auto font-medium'
                               >
                                 Sell
                               </Button>
@@ -221,17 +274,17 @@ export default function HoldingsTable({ holdings, tokenizedShares, loading }: Ho
                           ) : (
                             <>
                               <Button
-                                variant="link"
-                                size="sm"
+                                variant='link'
+                                size='sm'
                                 onClick={() => handleConvert(item)}
-                                className="text-orange-600 hover:text-orange-700 p-0 h-auto font-medium"
+                                className='text-orange-600 hover:text-orange-700 p-0 h-auto font-medium'
                               >
                                 Convert
                               </Button>
                               <Button
-                                variant="link"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 p-0 h-auto font-medium"
+                                variant='link'
+                                size='sm'
+                                className='text-red-600 hover:text-red-700 p-0 h-auto font-medium'
                               >
                                 Sell
                               </Button>

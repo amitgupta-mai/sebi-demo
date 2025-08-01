@@ -141,7 +141,7 @@ export default function Portfolio() {
         token.quantity,
       ...calculatePnL(
         parseFloat(token.currentPrice || token.company?.currentPrice || 0),
-        parseFloat(token.tokenizationPrice || 0),
+        parseFloat(token.averagePrice || 0),
         token.quantity
       ),
     })),
@@ -447,7 +447,7 @@ export default function Portfolio() {
                               parseFloat(
                                 holding.type === 'share'
                                   ? holding.averagePrice || 0
-                                  : holding.tokenizationPrice || 0
+                                  : holding.averagePrice || 0
                               )
                             )}
                           </p>

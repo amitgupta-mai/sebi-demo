@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,21 +30,223 @@ import {
   HelpCircle,
   Save,
   Upload,
+  Loader2,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiRequest } from '@/lib/queryClient';
+import { useQueryClient } from '@tanstack/react-query';
+
+interface UserProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  isEmailVerified: boolean;
+  walletAddress?: string;
+  profileImageUrl?: string;
+  phone?: string;
+  investorId?: string;
+  kycStatus?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface ProfileUpdateData {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+interface PasswordUpdateData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
 
 export default function Settings() {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('profile');
 
-  // Demo user data
-  const demoUser = {
-    firstName: 'Demo',
-    lastName: 'Investor',
-    email: 'demo@investor.com',
-    phone: '+91 9876543210',
-    investorId: 'INV-DEMO-001',
-    profileImageUrl: null,
-    kycStatus: 'verified',
+  // Form states
+  const [profileData, setProfileData] = useState<ProfileUpdateData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+  });
+
+  const [passwordData, setPasswordData] = useState<PasswordUpdateData>({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  // Get current user profile
+  const { data: userProfileResponse, isLoading: profileLoading } = useQuery<{
+    success: boolean;
+    message: string;
+    data: UserProfile;
+  }>({
+    queryKey: ['/api/auth/me'],
+  });
+
+  // Extract user profile from response
+  const userProfile = userProfileResponse?.data;
+
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: ProfileUpdateData) => {
+      const baseUrl =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      const response = await apiRequest(
+        'PUT',
+        `${baseUrl}/api/users/profile`,
+        data
+      );
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to update profile');
+      }
+
+      return result;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Profile updated successfully!',
+      });
+      // Invalidate the user profile query to refetch updated data
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update profile',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Update password mutation
+  const updatePasswordMutation = useMutation({
+    mutationFn: async (data: {
+      currentPassword: string;
+      newPassword: string;
+    }) => {
+      const baseUrl =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      const response = await apiRequest(
+        'PUT',
+        `${baseUrl}/api/users/password`,
+        data
+      );
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to update password');
+      }
+
+      return result;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Password updated successfully!',
+      });
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update password',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Initialize profile data when user data is loaded
+  useEffect(() => {
+    if (userProfile) {
+      setProfileData({
+        firstName: userProfile.firstName || '',
+        lastName: userProfile.lastName || '',
+        email: userProfile.email || '',
+      });
+    }
+  }, [userProfile]);
+
+  const handleProfileUpdate = () => {
+    if (!profileData.firstName || !profileData.lastName || !profileData.email) {
+      toast({
+        title: 'Error',
+        description: 'Please fill all required fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateProfileMutation.mutate(profileData);
   };
+
+  const handlePasswordUpdate = () => {
+    if (
+      !passwordData.currentPassword ||
+      !passwordData.newPassword ||
+      !passwordData.confirmPassword
+    ) {
+      toast({
+        title: 'Error',
+        description: 'Please fill all password fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: 'Error',
+        description: 'New passwords do not match',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      toast({
+        title: 'Error',
+        description: 'Password must be at least 8 characters long',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updatePasswordMutation.mutate({
+      currentPassword: passwordData.currentPassword,
+      newPassword: passwordData.newPassword,
+    });
+  };
+
+  if (profileLoading) {
+    return (
+      <div className='min-h-screen bg-gray-50'>
+        <Header />
+        <div className='flex'>
+          <Sidebar />
+          <main className='flex-1 p-6'>
+            <div className='flex items-center justify-center h-64'>
+              <Loader2 className='h-8 w-8 animate-spin' />
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className='min-h-screen bg-gray-50'>
@@ -122,12 +326,12 @@ export default function Settings() {
                     <div className='flex items-center space-x-6'>
                       <Avatar className='h-20 w-20'>
                         <AvatarImage
-                          src={demoUser.profileImageUrl || ''}
+                          src={userProfile?.profileImageUrl || ''}
                           alt='Profile'
                         />
                         <AvatarFallback className='text-lg'>
-                          {demoUser.firstName[0]}
-                          {demoUser.lastName[0]}
+                          {userProfile?.firstName?.[0]}
+                          {userProfile?.lastName?.[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div>
@@ -146,12 +350,27 @@ export default function Settings() {
                         <Label htmlFor='firstName'>First Name</Label>
                         <Input
                           id='firstName'
-                          defaultValue={demoUser.firstName}
+                          value={profileData.firstName}
+                          onChange={(e) =>
+                            setProfileData({
+                              ...profileData,
+                              firstName: e.target.value,
+                            })
+                          }
                         />
                       </div>
                       <div>
                         <Label htmlFor='lastName'>Last Name</Label>
-                        <Input id='lastName' defaultValue={demoUser.lastName} />
+                        <Input
+                          id='lastName'
+                          value={profileData.lastName}
+                          onChange={(e) =>
+                            setProfileData({
+                              ...profileData,
+                              lastName: e.target.value,
+                            })
+                          }
+                        />
                       </div>
                     </div>
 
@@ -160,7 +379,13 @@ export default function Settings() {
                       <Input
                         id='email'
                         type='email'
-                        defaultValue={demoUser.email}
+                        value={profileData.email}
+                        onChange={(e) =>
+                          setProfileData({
+                            ...profileData,
+                            email: e.target.value,
+                          })
+                        }
                       />
                     </div>
 
@@ -169,13 +394,24 @@ export default function Settings() {
                       <Input
                         id='phone'
                         type='tel'
-                        defaultValue={demoUser.phone}
+                        value={userProfile?.phone || ''}
+                        disabled
                       />
                     </div>
 
-                    <Button className='w-full'>
-                      <Save className='h-4 w-4 mr-2' />
-                      Save Changes
+                    <Button
+                      className='w-full'
+                      onClick={handleProfileUpdate}
+                      disabled={updateProfileMutation.isPending}
+                    >
+                      {updateProfileMutation.isPending ? (
+                        <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                      ) : (
+                        <Save className='h-4 w-4 mr-2' />
+                      )}
+                      {updateProfileMutation.isPending
+                        ? 'Saving...'
+                        : 'Save Changes'}
                     </Button>
                   </CardContent>
                 </Card>
@@ -187,7 +423,9 @@ export default function Settings() {
                   <CardContent className='space-y-4'>
                     <div className='flex items-center justify-between'>
                       <span className='text-sm font-medium'>Investor ID</span>
-                      <Badge variant='outline'>{demoUser.investorId}</Badge>
+                      <Badge variant='outline'>
+                        {userProfile?.investorId || 'N/A'}
+                      </Badge>
                     </div>
                     <Separator />
                     <div className='flex items-center justify-between'>
@@ -196,7 +434,7 @@ export default function Settings() {
                         variant='default'
                         className='bg-green-100 text-green-800'
                       >
-                        Verified
+                        {userProfile?.kycStatus || 'Not Verified'}
                       </Badge>
                     </div>
                     <Separator />
@@ -219,19 +457,62 @@ export default function Settings() {
                   <CardContent className='space-y-4'>
                     <div>
                       <Label htmlFor='currentPassword'>Current Password</Label>
-                      <Input id='currentPassword' type='password' />
+                      <Input
+                        id='currentPassword'
+                        type='password'
+                        value={passwordData.currentPassword}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            currentPassword: e.target.value,
+                          })
+                        }
+                      />
                     </div>
                     <div>
                       <Label htmlFor='newPassword'>New Password</Label>
-                      <Input id='newPassword' type='password' />
+                      <Input
+                        id='newPassword'
+                        type='password'
+                        value={passwordData.newPassword}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            newPassword: e.target.value,
+                          })
+                        }
+                      />
                     </div>
                     <div>
                       <Label htmlFor='confirmPassword'>
                         Confirm New Password
                       </Label>
-                      <Input id='confirmPassword' type='password' />
+                      <Input
+                        id='confirmPassword'
+                        type='password'
+                        value={passwordData.confirmPassword}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            confirmPassword: e.target.value,
+                          })
+                        }
+                      />
                     </div>
-                    <Button className='w-full'>Update Password</Button>
+                    <Button
+                      className='w-full'
+                      onClick={handlePasswordUpdate}
+                      disabled={updatePasswordMutation.isPending}
+                    >
+                      {updatePasswordMutation.isPending ? (
+                        <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                      ) : (
+                        <Save className='h-4 w-4 mr-2' />
+                      )}
+                      {updatePasswordMutation.isPending
+                        ? 'Updating...'
+                        : 'Update Password'}
+                    </Button>
                   </CardContent>
                 </Card>
 

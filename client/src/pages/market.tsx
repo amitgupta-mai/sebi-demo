@@ -321,13 +321,13 @@ export default function Market() {
                       <tbody>
                         {companies.map((company: any) => {
                           const priceChange = (Math.random() - 0.5) * 10;
+                          const currentPrice =
+                            parseFloat(company.currentPrice) || 1; // Prevent division by zero
                           const changePercent =
-                            (priceChange / parseFloat(company.currentPrice)) *
-                            100;
+                            (priceChange / currentPrice) * 100;
                           const volume =
                             Math.floor(Math.random() * 10000000) + 1000000;
-                          const marketCap =
-                            parseFloat(company.currentPrice) * 1000000000;
+                          const marketCap = currentPrice * 1000000000;
 
                           return (
                             <tr

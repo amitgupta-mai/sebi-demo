@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction, QueryKey } from '@tanstack/react-query';
+import Cookies from 'js-cookie';
 
 // Function to get current user ID from cookies
 const getCurrentUserId = () => {
@@ -20,41 +21,133 @@ const getCurrentUserId = () => {
 
 // Get access token from cookies
 const getAccessToken = () => {
-  return document.cookie
-    .split('; ')
-    .find((row) => row.startsWith('accessToken='))
-    ?.split('=')[1];
+  return Cookies.get('accessToken');
 };
 
-// Real API request function
-export async function apiRequest(
-  method: string,
+// Get refresh token from cookies
+const getRefreshToken = () => {
+  return Cookies.get('refreshToken');
+};
+
+// Refresh token function
+const refreshAccessToken = async (): Promise<boolean> => {
+  try {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      return false;
+    }
+
+    const baseUrl =
+      import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/auth/refresh-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.data?.tokens) {
+        // Store new tokens
+        Cookies.set('accessToken', data.data.tokens.accessToken, {
+          expires: 7,
+        });
+        Cookies.set('refreshToken', data.data.tokens.refreshToken, {
+          expires: 7,
+        });
+        return true;
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    return false;
+  }
+};
+
+// Logout and redirect to login
+const logoutAndRedirect = () => {
+  // Clear all auth cookies
+  Cookies.remove('accessToken');
+  Cookies.remove('refreshToken');
+  Cookies.remove('userData');
+
+  // Redirect to login
+  window.location.href = '/login';
+};
+
+// Global request interceptor
+const createRequestWithAuth = async (
   url: string,
-  data?: unknown | undefined
-): Promise<Response> {
+  options: RequestInit = {}
+): Promise<Response> => {
   const accessToken = getAccessToken();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
 
+  // Merge with existing headers if any
+  if (options.headers) {
+    Object.assign(headers, options.headers);
+  }
+
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
 
-  const res = await fetch(url, {
-    method,
+  const response = await fetch(url, {
+    ...options,
     headers,
-    body: data ? JSON.stringify(data) : undefined,
     credentials: 'include',
   });
 
-  if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+  // Handle 401 Unauthorized
+  if (response.status === 401) {
+    // Try to refresh the token
+    const refreshSuccess = await refreshAccessToken();
+
+    if (refreshSuccess) {
+      // Retry the original request with new token
+      const newAccessToken = getAccessToken();
+      if (newAccessToken) {
+        headers['Authorization'] = `Bearer ${newAccessToken}`;
+        const retryResponse = await fetch(url, {
+          ...options,
+          headers,
+          credentials: 'include',
+        });
+        return retryResponse;
+      }
+    }
+
+    // If refresh failed, logout and redirect
+    logoutAndRedirect();
+    throw new Error('Authentication failed');
   }
 
-  return res;
+  return response;
+};
+
+// Real API request function with auth interceptor
+export async function apiRequest(
+  method: string,
+  url: string,
+  data?: unknown | undefined
+): Promise<Response> {
+  const response = await createRequestWithAuth(url, {
+    method,
+    body: data ? JSON.stringify(data) : undefined,
+  });
+
+  if (!response.ok) {
+    const text = (await response.text()) || response.statusText;
+    throw new Error(`${response.status}: ${text}`);
+  }
+
+  return response;
 }
 
 type UnauthorizedBehavior = 'returnNull' | 'throw';
@@ -72,23 +165,32 @@ export const getQueryFn: <T>(options: {
       import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
     const fullUrl = `${baseUrl}${queryPath}`;
 
-    const res = await fetch(fullUrl, {
-      credentials: 'include',
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ''}`,
-      },
-    });
+    try {
+      const response = await createRequestWithAuth(fullUrl);
 
-    if (unauthorizedBehavior === 'returnNull' && res.status === 401) {
-      return null;
+      if (unauthorizedBehavior === 'returnNull' && response.status === 401) {
+        return null;
+      }
+
+      if (!response.ok) {
+        const text = (await response.text()) || response.statusText;
+        throw new Error(`${response.status}: ${text}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      // If it's an authentication error, handle it appropriately
+      if (
+        error instanceof Error &&
+        error.message.includes('Authentication failed')
+      ) {
+        if (unauthorizedBehavior === 'returnNull') {
+          return null;
+        }
+        throw error;
+      }
+      throw error;
     }
-
-    if (!res.ok) {
-      const text = (await res.text()) || res.statusText;
-      throw new Error(`${res.status}: ${text}`);
-    }
-
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({

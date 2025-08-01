@@ -460,9 +460,7 @@ export default function Wallet() {
                       {formatCurrency(
                         walletTransactions
                           ?.filter(
-                            (t: any) =>
-                              t.transactionType === 'withdraw_fund' &&
-                              t.status === 'completed'
+                            (t: any) => t.historyType === 'withdraw_funds'
                           )
                           ?.reduce(
                             (sum: number, t: any) => sum + parseFloat(t.amount),
