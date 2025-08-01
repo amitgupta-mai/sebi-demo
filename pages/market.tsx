@@ -24,7 +24,6 @@ import {
   Activity,
   IndianRupee,
   BarChart3,
-  Volume2,
   Coins,
   ArrowUpRight,
   ArrowDownRight,
@@ -163,10 +162,19 @@ export default function Market() {
   const formatLargeNumber = (value: string | number | undefined) => {
     if (!value) return '0';
 
+    // Check if the value contains scientific notation
+    const valueStr = String(value);
+    if (valueStr.includes('e') || valueStr.includes('E')) {
+      return '0';
+    }
+
     const num = typeof value === 'string' ? parseFloat(value) : value;
 
     // Check for invalid or extremely large numbers
     if (isNaN(num) || !isFinite(num) || num < 0) return '0';
+
+    // Handle extremely large numbers that might cause overflow
+    if (num > 1e15) return '0';
 
     // Handle different scales
     if (num >= 1e12) return `${(num / 1e12).toFixed(1)}T`;
@@ -292,10 +300,10 @@ export default function Market() {
             {/* Market Overview */}
             <div className='xl:col-span-2 space-y-6'>
               {/* Market Stats */}
-              <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                 {marketLoading ? (
                   <>
-                    {[1, 2, 3, 4].map((index) => (
+                    {[1, 2, 3].map((index) => (
                       <Card key={index}>
                         <CardContent className='p-4'>
                           <div className='flex items-center space-x-2'>
@@ -319,20 +327,6 @@ export default function Market() {
                             <p className='text-sm text-gray-600'>Market Cap</p>
                             <p className='text-lg font-semibold'>
                               ₹{formatLargeNumber(marketStats?.totalMarketCap)}T
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardContent className='p-4'>
-                        <div className='flex items-center space-x-2'>
-                          <Volume2 className='h-5 w-5 text-green-500' />
-                          <div>
-                            <p className='text-sm text-gray-600'>24h Volume</p>
-                            <p className='text-lg font-semibold'>
-                              ₹{formatLargeNumber(marketStats?.totalVolume)}B
                             </p>
                           </div>
                         </div>
