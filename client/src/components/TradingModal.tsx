@@ -191,7 +191,7 @@ export default function TradingModal({ isOpen, onClose, companies, tokenizedShar
           </div>
 
           <div>
-            <Label htmlFor="price">Price per Token</Label>
+            <Label htmlFor="price">Price</Label>
             <Input
               id="price"
               type="number"
@@ -222,7 +222,7 @@ export default function TradingModal({ isOpen, onClose, companies, tokenizedShar
                   <span>{quantity} tokens</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Price per Token:</span>
+                  <span>Price:</span>
                   <span>{formatCurrency(parseFloat(price))}</span>
                 </div>
                 <div className="flex justify-between font-semibold text-gray-900 pt-2 border-t border-green-200">

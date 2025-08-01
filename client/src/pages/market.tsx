@@ -64,6 +64,28 @@ export default function Market() {
   // Extract tokenized shares from API response
   const tokenizedShares = tokenizedSharesResponse?.data?.tokens || [];
 
+  // Extract unique companies from available tokens for trading
+  const availableCompanies = tokenizedShares.reduce(
+    (unique: any[], token: any) => {
+      const company = token.company;
+      if (company && !unique.find((c) => c.id === company.id)) {
+        unique.push({
+          id: company.id || token.companyId,
+          name: company.name,
+          symbol: company.symbol,
+          currentPrice: token.currentPrice,
+        });
+      }
+      return unique;
+    },
+    []
+  );
+
+  // Debug: Log the API response
+  console.log('Available Tokens API Response:', tokenizedSharesResponse);
+  console.log('Tokenized Shares Data:', tokenizedShares);
+  console.log('Available Companies for Trading:', availableCompanies);
+
   const createOrderMutation = useMutation({
     mutationFn: async (data: {
       companyId: string;
@@ -80,7 +102,6 @@ export default function Market() {
         tokenId: data.tokenId,
         companyId: data.companyId,
         quantity: data.quantity,
-        pricePerToken: data.price,
       });
     },
     onSuccess: () => {
@@ -319,7 +340,7 @@ export default function Market() {
                         </tr>
                       </thead>
                       <tbody>
-                        {companies.map((company: any) => {
+                        {availableCompanies.map((company: any) => {
                           const priceChange = (Math.random() - 0.5) * 10;
                           const currentPrice =
                             parseFloat(company.currentPrice) || 1; // Prevent division by zero
@@ -518,7 +539,7 @@ export default function Market() {
                         <SelectValue placeholder='Choose a company' />
                       </SelectTrigger>
                       <SelectContent>
-                        {companies.map((company: any) => (
+                        {availableCompanies.map((company: any) => (
                           <SelectItem key={company.id} value={company.id}>
                             {company.name} -{' '}
                             {formatCurrency(parseFloat(company.currentPrice))}
@@ -536,18 +557,6 @@ export default function Market() {
                       placeholder='Enter quantity'
                       value={quantity}
                       onChange={(e) => setQuantity(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor='price'>Price per Token</Label>
-                    <Input
-                      id='price'
-                      type='number'
-                      step='0.01'
-                      placeholder='Enter price'
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
                     />
                   </div>
 

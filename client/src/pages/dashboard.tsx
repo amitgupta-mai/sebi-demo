@@ -5,7 +5,14 @@ import PortfolioChart from '@/components/PortfolioChart';
 import HoldingsTable from '@/components/HoldingsTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, Tag, Coins, ArrowRightLeft, ChartPie } from 'lucide-react';
+import {
+  TrendingUp,
+  Tag,
+  Coins,
+  ArrowRightLeft,
+  ChartPie,
+  ExternalLink,
+} from 'lucide-react';
 import { Link } from 'wouter';
 
 interface PortfolioSummary {
@@ -111,6 +118,10 @@ export default function Dashboard() {
     if (symbolLower === 'hdfcbank') return 'company-logo hdfcbank';
     if (symbolLower === 'icicibank') return 'company-logo icicibank';
     return 'company-logo default';
+  };
+
+  const generateKalpScanUrl = (transactionHash: string) => {
+    return `https://kalpscan.io/transactions?transactionId=${transactionHash}&network=testnet`;
   };
 
   return (
@@ -323,6 +334,22 @@ export default function Dashboard() {
                                 transaction.createdAt
                               ).toLocaleDateString()}
                             </p>
+                            {(transaction as any).metadata?.transactionHash && (
+                              <div className='flex items-center text-xs text-blue-600 mt-1'>
+                                <ExternalLink className='h-3 w-3 mr-1' />
+                                <a
+                                  href={generateKalpScanUrl(
+                                    (transaction as any).metadata
+                                      .transactionHash
+                                  )}
+                                  target='_blank'
+                                  rel='noopener noreferrer'
+                                  className='hover:text-blue-800 hover:underline'
+                                >
+                                  View on KalpScan
+                                </a>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className='text-right'>

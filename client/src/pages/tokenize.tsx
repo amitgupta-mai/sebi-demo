@@ -277,7 +277,7 @@ export default function Tokenize() {
                     </h4>
                     <div className='text-sm text-gray-600 space-y-1'>
                       <div className='flex justify-between'>
-                        <span>Share Price per token:</span>
+                        <span>Share Price:</span>
                         <span>{formatCurrency(costs.sharePrice)}</span>
                       </div>
                       <div className='flex justify-between'>

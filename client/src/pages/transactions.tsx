@@ -23,6 +23,7 @@ import {
   Undo2,
   ShoppingCart,
   History,
+  ExternalLink,
 } from 'lucide-react';
 
 export default function Transactions() {
@@ -113,6 +114,10 @@ export default function Transactions() {
     if (symbolLower === 'hdfcbank') return 'company-logo hdfcbank';
     if (symbolLower === 'icicibank') return 'company-logo icicibank';
     return 'company-logo default';
+  };
+
+  const generateKalpScanUrl = (transactionHash: string) => {
+    return `https://kalpscan.io/transactions?transactionId=${transactionHash}&network=testnet`;
   };
 
   // Filter and sort transactions
@@ -299,7 +304,7 @@ export default function Transactions() {
                           </p>
                         </div>
                         <div>
-                          <p className='text-gray-500'>Price per Unit</p>
+                          <p className='text-gray-500'>Price</p>
                           <p className='font-medium'>
                             {formatCurrency(
                               parseFloat(transaction.pricePerUnit)
@@ -314,17 +319,24 @@ export default function Transactions() {
                         </div>
                         <div>
                           <p className='text-gray-500'>Status</p>
-                          <Badge
-                            variant={
-                              transaction.status === 'completed'
-                                ? 'default'
-                                : transaction.status === 'pending'
-                                ? 'secondary'
-                                : 'destructive'
-                            }
-                          >
-                            {transaction.status.toUpperCase()}
-                          </Badge>
+                          <div className='space-y-1'>
+                            <Badge
+                              variant={
+                                transaction.status === 'completed'
+                                  ? 'default'
+                                  : transaction.status === 'pending'
+                                  ? 'secondary'
+                                  : 'destructive'
+                              }
+                            >
+                              {transaction.status.toUpperCase()}
+                            </Badge>
+                            {transaction.metadata?.blockchainMinted && (
+                              <Badge variant='outline' className='text-xs'>
+                                Blockchain Minted
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -333,6 +345,37 @@ export default function Transactions() {
                           <p className='text-sm text-gray-600'>
                             {transaction.description}
                           </p>
+                          {transaction.metadata?.tokenId && (
+                            <p className='text-xs text-gray-500 mt-1'>
+                              Token ID: {transaction.metadata.tokenId}
+                            </p>
+                          )}
+                          {transaction.metadata?.blockchainResponse
+                            ?.contractAddress && (
+                            <p className='text-xs text-gray-500'>
+                              Contract:{' '}
+                              {
+                                transaction.metadata.blockchainResponse
+                                  .contractAddress
+                              }
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {transaction.metadata?.transactionHash && (
+                        <div className='mt-4 flex items-center text-sm text-blue-600'>
+                          <ExternalLink className='h-4 w-4 mr-1' />
+                          <a
+                            href={generateKalpScanUrl(
+                              transaction.metadata.transactionHash
+                            )}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='hover:text-blue-800 hover:underline'
+                          >
+                            View on KalpScan
+                          </a>
                         </div>
                       )}
                     </div>

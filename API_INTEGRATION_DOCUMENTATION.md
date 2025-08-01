@@ -1,6 +1,7 @@
 # SEBI POC Backend API Integration Documentation
 
 ## 📋 Table of Contents
+
 1. [Base Configuration](#base-configuration)
 2. [Authentication](#authentication)
 3. [User Management](#user-management)
@@ -18,16 +19,18 @@
 ## 🔧 Base Configuration
 
 ### Base URL
+
 ```
 Development: http://localhost:3000
 Production: https://your-production-domain.com
 ```
 
 ### Headers
+
 ```javascript
 const headers = {
   'Content-Type': 'application/json',
-  'Authorization': `Bearer ${accessToken}` // For authenticated requests
+  Authorization: `Bearer ${accessToken}`, // For authenticated requests
 };
 ```
 
@@ -36,6 +39,7 @@ const headers = {
 ## 🔐 Authentication
 
 ### 1. User Registration
+
 ```javascript
 // POST /api/auth/signup
 const signupData = {
@@ -66,6 +70,7 @@ const response = await fetch(`${baseUrl}/api/auth/signup`, {
 ```
 
 ### 2. Email Verification
+
 ```javascript
 // POST /api/auth/verify-email
 const verifyData = {
@@ -108,6 +113,7 @@ const response = await fetch(`${baseUrl}/api/auth/verify-email`, {
 ```
 
 ### 3. User Login
+
 ```javascript
 // POST /api/auth/login
 const loginData = {
@@ -160,20 +166,22 @@ const response = await fetch(`${baseUrl}/api/auth/login`, {
 ```
 
 ### 4. Send Verification OTP for Login
+
 ```javascript
 // POST /api/auth/send-verification-otp
 const otpData = {
-  email: "john.doe@example.com"
+  email: 'john.doe@example.com',
 };
 
 const response = await fetch(`${baseUrl}/api/auth/send-verification-otp`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(otpData)
+  body: JSON.stringify(otpData),
 });
 ```
 
 ### 5. Refresh Token
+
 ```javascript
 // POST /api/auth/refresh-token
 const refreshData = {
@@ -201,18 +209,20 @@ const response = await fetch(`${baseUrl}/api/auth/refresh-token`, {
 ```
 
 ### 6. Logout
+
 ```javascript
 // POST /api/auth/logout
 const response = await fetch(`${baseUrl}/api/auth/logout`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`
-  }
+    Authorization: `Bearer ${accessToken}`,
+  },
 });
 ```
 
 ### 7. Get Current User
+
 ```javascript
 // GET /api/auth/me
 const response = await fetch(`${baseUrl}/api/auth/me`, {
@@ -244,6 +254,7 @@ const response = await fetch(`${baseUrl}/api/auth/me`, {
 ## 👤 User Management
 
 ### 1. Get All Users (Admin)
+
 ```javascript
 // GET /api/users
 const response = await fetch(`${baseUrl}/api/users`, {
@@ -273,32 +284,34 @@ const response = await fetch(`${baseUrl}/api/users`, {
 ```
 
 ### 2. Search Users
+
 ```javascript
 // GET /api/users/search?q=john
 const response = await fetch(`${baseUrl}/api/users/search?q=john`, {
   method: 'GET',
   headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
+    Authorization: `Bearer ${accessToken}`,
+  },
 });
 ```
 
 ### 3. Update User Profile
+
 ```javascript
 // PUT /api/users/profile
 const updateData = {
-  firstName: "John",
-  lastName: "Smith",
-  email: "john.smith@example.com"
+  firstName: 'John',
+  lastName: 'Smith',
+  email: 'john.smith@example.com',
 };
 
 const response = await fetch(`${baseUrl}/api/users/profile`, {
   method: 'PUT',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`
+    Authorization: `Bearer ${accessToken}`,
   },
-  body: JSON.stringify(updateData)
+  body: JSON.stringify(updateData),
 });
 ```
 
@@ -307,6 +320,7 @@ const response = await fetch(`${baseUrl}/api/users/profile`, {
 ## 💰 Wallet Management
 
 ### 1. Get User Wallet
+
 ```javascript
 // GET /api/wallet
 const response = await fetch(`${baseUrl}/api/wallet`, {
@@ -337,6 +351,7 @@ const response = await fetch(`${baseUrl}/api/wallet`, {
 ```
 
 ### 2. Add Funds to Wallet
+
 ```javascript
 // POST /api/wallet/add-funds
 const addFundsData = {
@@ -371,57 +386,61 @@ const response = await fetch(`${baseUrl}/api/wallet/add-funds`, {
 ```
 
 ### 3. Withdraw Funds from Wallet
+
 ```javascript
 // POST /api/wallet/withdraw-funds
 const withdrawData = {
-  amount: 2000.00
+  amount: 2000.0,
 };
 
 const response = await fetch(`${baseUrl}/api/wallet/withdraw-funds`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`
+    Authorization: `Bearer ${accessToken}`,
   },
-  body: JSON.stringify(withdrawData)
+  body: JSON.stringify(withdrawData),
 });
 ```
 
 ### 4. Connect CBDC Wallet
+
 ```javascript
 // POST /api/wallet/connect-cbdc
 const cbdcData = {
-  walletAddress: "cbdc_wallet_address_here"
+  walletAddress: 'cbdc_wallet_address_here',
 };
 
 const response = await fetch(`${baseUrl}/api/wallet/connect-cbdc`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`
+    Authorization: `Bearer ${accessToken}`,
   },
-  body: JSON.stringify(cbdcData)
+  body: JSON.stringify(cbdcData),
 });
 ```
 
 ### 5. Update CBDC Balance
+
 ```javascript
 // PATCH /api/wallet/update-cbdc-balance
 const balanceData = {
-  balance: 1000.00
+  balance: 1000.0,
 };
 
 const response = await fetch(`${baseUrl}/api/wallet/update-cbdc-balance`, {
   method: 'PATCH',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`
+    Authorization: `Bearer ${accessToken}`,
   },
-  body: JSON.stringify(balanceData)
+  body: JSON.stringify(balanceData),
 });
 ```
 
 ### 6. Get Wallet Balance
+
 ```javascript
 // GET /api/wallet/balance
 const response = await fetch(`${baseUrl}/api/wallet/balance`, {
@@ -445,6 +464,7 @@ const response = await fetch(`${baseUrl}/api/wallet/balance`, {
 ```
 
 ### 7. Close Wallet (Paytm-like)
+
 ```javascript
 // DELETE /api/wallet
 const response = await fetch(`${baseUrl}/api/wallet`, {
@@ -481,6 +501,7 @@ const response = await fetch(`${baseUrl}/api/wallet`, {
 ## 📊 Market Data
 
 ### 1. Get All Companies
+
 ```javascript
 // GET /api/market/companies
 const response = await fetch(`${baseUrl}/api/market/companies`, {
@@ -515,30 +536,34 @@ const response = await fetch(`${baseUrl}/api/market/companies`, {
 ```
 
 ### 2. Get Company by ID
+
 ```javascript
 // GET /api/market/companies/:id
 const response = await fetch(`${baseUrl}/api/market/companies/company-id`, {
-  method: 'GET'
+  method: 'GET',
 });
 ```
 
 ### 3. Get Company by Symbol
+
 ```javascript
 // GET /api/market/companies/symbol/TCS
 const response = await fetch(`${baseUrl}/api/market/companies/symbol/TCS`, {
-  method: 'GET'
+  method: 'GET',
 });
 ```
 
 ### 4. Search Companies
+
 ```javascript
 // GET /api/market/companies/search?q=TCS
 const response = await fetch(`${baseUrl}/api/market/companies/search?q=TCS`, {
-  method: 'GET'
+  method: 'GET',
 });
 ```
 
 ### 5. Get Market Overview
+
 ```javascript
 // GET /api/market/overview
 const response = await fetch(`${baseUrl}/api/market/overview`, {
@@ -564,6 +589,7 @@ const response = await fetch(`${baseUrl}/api/market/overview`, {
 ## 📈 Shares Management
 
 ### 1. Get User Shares
+
 ```javascript
 // GET /api/shares
 const response = await fetch(`${baseUrl}/api/shares`, {
@@ -599,77 +625,82 @@ const response = await fetch(`${baseUrl}/api/shares`, {
 ```
 
 ### 2. Get Share by ID
+
 ```javascript
 // GET /api/shares/:id
 const response = await fetch(`${baseUrl}/api/shares/share-id`, {
   method: 'GET',
   headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
+    Authorization: `Bearer ${accessToken}`,
+  },
 });
 ```
 
 ### 3. Buy Shares
+
 ```javascript
 // POST /api/shares/buy
 const buyData = {
-  companyId: "company-id",
-  quantity: 10
+  companyId: 'company-id',
+  quantity: 10,
 };
 
 const response = await fetch(`${baseUrl}/api/shares/buy`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`
+    Authorization: `Bearer ${accessToken}`,
   },
-  body: JSON.stringify(buyData)
+  body: JSON.stringify(buyData),
 });
 ```
 
 ### 4. Sell Shares
+
 ```javascript
 // POST /api/shares/sell
 const sellData = {
-  shareId: "share-id",
-  quantity: 5
+  shareId: 'share-id',
+  quantity: 5,
 };
 
 const response = await fetch(`${baseUrl}/api/shares/sell`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`
+    Authorization: `Bearer ${accessToken}`,
   },
-  body: JSON.stringify(sellData)
+  body: JSON.stringify(sellData),
 });
 ```
 
 ### 5. Tokenize Shares
+
 ```javascript
 // POST /api/shares/tokenize
 const tokenizeData = {
-  shareId: "share-id"
+  shareId: 'share-id',
 };
 
 const response = await fetch(`${baseUrl}/api/shares/tokenize`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`
+    Authorization: `Bearer ${accessToken}`,
   },
-  body: JSON.stringify(tokenizeData)
+  body: JSON.stringify(tokenizeData),
 });
 ```
 
 ### 6. Get Non-Tokenized Shares
+
 ```javascript
 // GET /api/shares/non-tokenized
 const response = await fetch(`${baseUrl}/api/shares/non-tokenized`, {
   method: 'GET',
   headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
+    Authorization: `Bearer ${accessToken}`,
+  },
 });
 ```
 
@@ -678,6 +709,7 @@ const response = await fetch(`${baseUrl}/api/shares/non-tokenized`, {
 ## 🪙 Token Trading
 
 ### 1. Get Available Tokens
+
 ```javascript
 // GET /api/tokens/available
 const response = await fetch(`${baseUrl}/api/tokens/available`, {
@@ -714,80 +746,83 @@ const response = await fetch(`${baseUrl}/api/tokens/available`, {
 ```
 
 ### 2. Buy Tokens
+
 ```javascript
 // POST /api/tokens/buy
 const buyTokenData = {
-  companyId: "company-id",
+  companyId: 'company-id',
   quantity: 10,
-  pricePerToken: 3456.80
 };
 
 const response = await fetch(`${baseUrl}/api/tokens/buy`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`
+    Authorization: `Bearer ${accessToken}`,
   },
-  body: JSON.stringify(buyTokenData)
+  body: JSON.stringify(buyTokenData),
 });
 ```
 
 ### 3. Sell Tokens
+
 ```javascript
 // POST /api/tokens/sell
 const sellTokenData = {
-  tokenId: "token-id",
+  tokenId: 'token-id',
   quantity: 5,
-  pricePerToken: 3500.00
 };
 
 const response = await fetch(`${baseUrl}/api/tokens/sell`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`
+    Authorization: `Bearer ${accessToken}`,
   },
-  body: JSON.stringify(sellTokenData)
+  body: JSON.stringify(sellTokenData),
 });
 ```
 
 ### 4. Get Available Tokens for Conversion
+
 ```javascript
 // GET /api/tokens/available-for-conversion
 const response = await fetch(`${baseUrl}/api/tokens/available-for-conversion`, {
   method: 'GET',
   headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
+    Authorization: `Bearer ${accessToken}`,
+  },
 });
 ```
 
 ### 5. Convert Tokens to Shares
+
 ```javascript
 // POST /api/tokens/convert-to-shares
 const convertData = {
-  tokenId: "token-id",
-  quantity: 10
+  tokenId: 'token-id',
+  quantity: 10,
 };
 
 const response = await fetch(`${baseUrl}/api/tokens/convert-to-shares`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`
+    Authorization: `Bearer ${accessToken}`,
   },
-  body: JSON.stringify(convertData)
+  body: JSON.stringify(convertData),
 });
 ```
 
 ### 6. Get Trading Orders
+
 ```javascript
 // GET /api/tokens/orders
 const response = await fetch(`${baseUrl}/api/tokens/orders`, {
   method: 'GET',
   headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
+    Authorization: `Bearer ${accessToken}`,
+  },
 });
 ```
 
@@ -796,6 +831,7 @@ const response = await fetch(`${baseUrl}/api/tokens/orders`, {
 ## 📊 Portfolio Management
 
 ### 1. Get Portfolio Overview
+
 ```javascript
 // GET /api/portfolio/overview
 const response = await fetch(`${baseUrl}/api/portfolio/overview`, {
@@ -823,6 +859,7 @@ const response = await fetch(`${baseUrl}/api/portfolio/overview`, {
 ```
 
 ### 2. Get Holdings
+
 ```javascript
 // GET /api/portfolio/holdings
 const response = await fetch(`${baseUrl}/api/portfolio/holdings`, {
@@ -849,6 +886,7 @@ const response = await fetch(`${baseUrl}/api/portfolio/holdings`, {
 ```
 
 ### 3. Get Portfolio Performance
+
 ```javascript
 // GET /api/portfolio/performance?period=1M
 const response = await fetch(`${baseUrl}/api/portfolio/performance?period=1M`, {
@@ -876,6 +914,7 @@ const response = await fetch(`${baseUrl}/api/portfolio/performance?period=1M`, {
 ```
 
 ### 4. Get Portfolio by Company
+
 ```javascript
 // GET /api/portfolio/company/:companyId
 const response = await fetch(`${baseUrl}/api/portfolio/company/company-id`, {
@@ -922,6 +961,7 @@ const response = await fetch(`${baseUrl}/api/portfolio/company/company-id`, {
 ## 📋 Transaction History
 
 ### 1. Get All Transactions
+
 ```javascript
 // GET /api/transactions
 const response = await fetch(`${baseUrl}/api/transactions`, {
@@ -962,39 +1002,43 @@ const response = await fetch(`${baseUrl}/api/transactions`, {
 ```
 
 ### 2. Get Transactions by Type
+
 ```javascript
 // GET /api/transactions/type/buy
 const response = await fetch(`${baseUrl}/api/transactions/type/buy`, {
   method: 'GET',
   headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
+    Authorization: `Bearer ${accessToken}`,
+  },
 });
 ```
 
 ### 3. Get Transactions by Status
+
 ```javascript
 // GET /api/transactions/status/completed
 const response = await fetch(`${baseUrl}/api/transactions/status/completed`, {
   method: 'GET',
   headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
+    Authorization: `Bearer ${accessToken}`,
+  },
 });
 ```
 
 ### 4. Search Transactions
+
 ```javascript
 // GET /api/transactions/search?q=TCS
 const response = await fetch(`${baseUrl}/api/transactions/search?q=TCS`, {
   method: 'GET',
   headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
+    Authorization: `Bearer ${accessToken}`,
+  },
 });
 ```
 
 ### 5. Get Transaction Statistics
+
 ```javascript
 // GET /api/transactions/stats
 const response = await fetch(`${baseUrl}/api/transactions/stats`, {
@@ -1028,6 +1072,7 @@ const response = await fetch(`${baseUrl}/api/transactions/stats`, {
 ### Common Error Responses
 
 #### 1. Authentication Errors
+
 ```javascript
 // 401 Unauthorized
 {
@@ -1047,6 +1092,7 @@ const response = await fetch(`${baseUrl}/api/transactions/stats`, {
 ```
 
 #### 2. Validation Errors
+
 ```javascript
 // 400 Bad Request
 {
@@ -1067,6 +1113,7 @@ const response = await fetch(`${baseUrl}/api/transactions/stats`, {
 ```
 
 #### 3. Not Found Errors
+
 ```javascript
 // 404 Not Found
 {
@@ -1078,6 +1125,7 @@ const response = await fetch(`${baseUrl}/api/transactions/stats`, {
 ```
 
 #### 4. Business Logic Errors
+
 ```javascript
 // 400 Bad Request - Insufficient Funds
 {
@@ -1097,6 +1145,7 @@ const response = await fetch(`${baseUrl}/api/transactions/stats`, {
 ```
 
 ### Error Codes Reference
+
 ```javascript
 const ERROR_CODES = {
   TOKEN_REQUIRED: 1001,
@@ -1108,7 +1157,7 @@ const ERROR_CODES = {
   INSUFFICIENT_FUNDS: 1007,
   INVALID_VERIFICATION_OTP: 1009,
   VERIFICATION_OTP_EXPIRED: 1011,
-  OTP_REQUIRED: 1012
+  OTP_REQUIRED: 1012,
 };
 ```
 
@@ -1117,6 +1166,7 @@ const ERROR_CODES = {
 ## 🔧 Integration Examples
 
 ### 1. Complete Authentication Flow
+
 ```javascript
 class AuthService {
   constructor(baseUrl) {
@@ -1130,11 +1180,11 @@ class AuthService {
       const response = await fetch(`${this.baseUrl}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData)
+        body: JSON.stringify(userData),
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         // Show email verification screen
         return { success: true, message: result.message, user: result.data };
@@ -1151,17 +1201,21 @@ class AuthService {
       const response = await fetch(`${this.baseUrl}/api/auth/verify-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ otp, email })
+        body: JSON.stringify({ otp, email }),
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         // Store tokens
         localStorage.setItem('accessToken', result.data.tokens.accessToken);
         localStorage.setItem('refreshToken', result.data.tokens.refreshToken);
-        
-        return { success: true, user: result.data.user, tokens: result.data.tokens };
+
+        return {
+          success: true,
+          user: result.data.user,
+          tokens: result.data.tokens,
+        };
       } else {
         throw new Error(result.message);
       }
@@ -1175,11 +1229,11 @@ class AuthService {
       const response = await fetch(`${this.baseUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         if (result.data.requiresVerification) {
           // Show email verification screen
@@ -1188,8 +1242,12 @@ class AuthService {
           // Store tokens
           localStorage.setItem('accessToken', result.data.tokens.accessToken);
           localStorage.setItem('refreshToken', result.data.tokens.refreshToken);
-          
-          return { success: true, user: result.data.user, tokens: result.data.tokens };
+
+          return {
+            success: true,
+            user: result.data.user,
+            tokens: result.data.tokens,
+          };
         }
       } else {
         throw new Error(result.message);
@@ -1204,18 +1262,18 @@ class AuthService {
       const response = await fetch(`${this.baseUrl}/api/auth/refresh-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: this.refreshToken })
+        body: JSON.stringify({ refreshToken: this.refreshToken }),
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         localStorage.setItem('accessToken', result.data.tokens.accessToken);
         localStorage.setItem('refreshToken', result.data.tokens.refreshToken);
-        
+
         this.accessToken = result.data.tokens.accessToken;
         this.refreshToken = result.data.tokens.refreshToken;
-        
+
         return result.data.tokens;
       } else {
         throw new Error(result.message);
@@ -1230,13 +1288,13 @@ class AuthService {
       await fetch(`${this.baseUrl}/api/auth/logout`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`
-        }
+          Authorization: `Bearer ${this.accessToken}`,
+        },
       });
 
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
-      
+
       this.accessToken = null;
       this.refreshToken = null;
     } catch (error) {
@@ -1247,6 +1305,7 @@ class AuthService {
 ```
 
 ### 2. Wallet Management Service
+
 ```javascript
 class WalletService {
   constructor(baseUrl, authService) {
@@ -1259,12 +1318,12 @@ class WalletService {
       const response = await fetch(`${this.baseUrl}/api/wallet`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.authService.accessToken}`
-        }
+          Authorization: `Bearer ${this.authService.accessToken}`,
+        },
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         return result.data;
       } else {
@@ -1281,13 +1340,13 @@ class WalletService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.authService.accessToken}`
+          Authorization: `Bearer ${this.authService.accessToken}`,
         },
-        body: JSON.stringify({ amount })
+        body: JSON.stringify({ amount }),
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         return result.data;
       } else {
@@ -1303,12 +1362,12 @@ class WalletService {
       const response = await fetch(`${this.baseUrl}/api/wallet`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${this.authService.accessToken}`
-        }
+          Authorization: `Bearer ${this.authService.accessToken}`,
+        },
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         return result.data;
       } else {
@@ -1322,6 +1381,7 @@ class WalletService {
 ```
 
 ### 3. Market Data Service
+
 ```javascript
 class MarketService {
   constructor(baseUrl) {
@@ -1332,7 +1392,7 @@ class MarketService {
     try {
       const response = await fetch(`${this.baseUrl}/api/market/companies`);
       const result = await response.json();
-      
+
       if (result.success) {
         return result.data;
       } else {
@@ -1345,9 +1405,13 @@ class MarketService {
 
   async searchCompanies(query) {
     try {
-      const response = await fetch(`${this.baseUrl}/api/market/companies/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(
+        `${this.baseUrl}/api/market/companies/search?q=${encodeURIComponent(
+          query
+        )}`
+      );
       const result = await response.json();
-      
+
       if (result.success) {
         return result.data;
       } else {
@@ -1362,7 +1426,7 @@ class MarketService {
     try {
       const response = await fetch(`${this.baseUrl}/api/market/overview`);
       const result = await response.json();
-      
+
       if (result.success) {
         return result.data;
       } else {
@@ -1376,6 +1440,7 @@ class MarketService {
 ```
 
 ### 4. Portfolio Service
+
 ```javascript
 class PortfolioService {
   constructor(baseUrl, authService) {
@@ -1388,12 +1453,12 @@ class PortfolioService {
       const response = await fetch(`${this.baseUrl}/api/portfolio/overview`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.authService.accessToken}`
-        }
+          Authorization: `Bearer ${this.authService.accessToken}`,
+        },
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         return result.data;
       } else {
@@ -1409,12 +1474,12 @@ class PortfolioService {
       const response = await fetch(`${this.baseUrl}/api/portfolio/holdings`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.authService.accessToken}`
-        }
+          Authorization: `Bearer ${this.authService.accessToken}`,
+        },
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         return result.data;
       } else {
@@ -1428,6 +1493,7 @@ class PortfolioService {
 ```
 
 ### 5. React Hook Example
+
 ```javascript
 import { useState, useEffect } from 'react';
 
@@ -1442,10 +1508,10 @@ const useAuth = (authService) => {
         const token = localStorage.getItem('accessToken');
         if (token) {
           const response = await fetch(`${baseUrl}/api/auth/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           });
           const result = await response.json();
-          
+
           if (result.success) {
             setUser(result.data);
           } else {
@@ -1467,9 +1533,9 @@ const useAuth = (authService) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const result = await authService.login(email, password);
-      
+
       if (result.requiresVerification) {
         return { requiresVerification: true, user: result.user };
       } else {
@@ -1502,6 +1568,7 @@ const useAuth = (authService) => {
 ## 📱 Frontend Integration Checklist
 
 ### ✅ Authentication Flow
+
 - [ ] User registration with email verification
 - [ ] Login with unverified email handling
 - [ ] Token refresh mechanism
@@ -1509,6 +1576,7 @@ const useAuth = (authService) => {
 - [ ] Persistent authentication state
 
 ### ✅ Wallet Management
+
 - [ ] Display wallet balance
 - [ ] Add funds functionality
 - [ ] Withdraw funds functionality
@@ -1516,30 +1584,35 @@ const useAuth = (authService) => {
 - [ ] Close wallet functionality (Paytm-like)
 
 ### ✅ Market Data
+
 - [ ] Display company listings
 - [ ] Search companies
 - [ ] Market overview dashboard
 - [ ] Real-time price updates
 
 ### ✅ Trading Features
+
 - [ ] Buy/sell shares
 - [ ] Tokenize shares
 - [ ] Buy/sell tokens
 - [ ] Convert tokens to shares
 
 ### ✅ Portfolio Management
+
 - [ ] Portfolio overview
 - [ ] Holdings breakdown
 - [ ] Performance tracking
 - [ ] Company-specific portfolio view
 
 ### ✅ Transaction History
+
 - [ ] Transaction listing
 - [ ] Filter by type/status
 - [ ] Search transactions
 - [ ] Transaction statistics
 
 ### ✅ Error Handling
+
 - [ ] Network error handling
 - [ ] Authentication error handling
 - [ ] Validation error display
@@ -1558,4 +1631,4 @@ const useAuth = (authService) => {
 7. **Add loading states**
 8. **Test all endpoints**
 
-This documentation provides everything needed to integrate with the SEBI POC Backend API. The frontend team can use these examples and patterns to build a complete trading platform interface. 
+This documentation provides everything needed to integrate with the SEBI POC Backend API. The frontend team can use these examples and patterns to build a complete trading platform interface.

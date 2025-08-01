@@ -27,12 +27,21 @@ export default function Trading() {
   const [quantity, setQuantity] = useState<string>('');
   const [price, setPrice] = useState<string>('');
 
+  const { data: availableTokensResponse, isLoading: tokensLoading } = useQuery<{
+    success: boolean;
+    message: string;
+    data: {
+      tokens: any[];
+    };
+  }>({
+    queryKey: ['/api/tokens/available'],
+  });
+
   const { data: companiesResponse, isLoading: companiesLoading } = useQuery<{
     success: boolean;
     message: string;
     data: {
       companies: any[];
-      total: number;
     };
   }>({
     queryKey: ['/api/market/companies'],
@@ -44,55 +53,36 @@ export default function Trading() {
     queryKey: ['/api/tokens/orders'],
   });
 
-  // Extract companies from API response
-  const companies =
-    companiesResponse?.data?.companies &&
-    companiesResponse?.data?.companies.length > 0
-      ? companiesResponse?.data?.companies
-      : [
-          {
-            id: '1',
-            name: 'Tata Consultancy Services Ltd',
-            symbol: 'TCS',
-            currentPrice: '3456.80',
-          },
-          {
-            id: '2',
-            name: 'Reliance Industries Ltd',
-            symbol: 'RELIANCE',
-            currentPrice: '2456.50',
-          },
-          {
-            id: '3',
-            name: 'Infosys Ltd',
-            symbol: 'INFY',
-            currentPrice: '1567.90',
-          },
-          {
-            id: '4',
-            name: 'HDFC Bank Ltd',
-            symbol: 'HDFCBANK',
-            currentPrice: '1678.45',
-          },
-          {
-            id: '5',
-            name: 'ICICI Bank Ltd',
-            symbol: 'ICICIBANK',
-            currentPrice: '987.65',
-          },
-          {
-            id: '6',
-            name: 'Wipro Ltd',
-            symbol: 'WIPRO',
-            currentPrice: '456.78',
-          },
-        ];
+  // Extract available tokens from API response
+  const availableTokens = availableTokensResponse?.data?.tokens || [];
+  const allCompanies = companiesResponse?.data?.companies || [];
+
+  // Extract unique companies that have available tokens
+  const companies = allCompanies.filter((company) =>
+    availableTokens.some((token) => token.companyId === company.id)
+  );
 
   const ordersArray = Array.isArray(orders)
     ? orders
     : orders?.data && Array.isArray(orders.data)
     ? orders.data
     : [];
+
+  // Debug: Log the API responses
+  console.log('Available Tokens API Response:', availableTokensResponse);
+  console.log('Companies API Response:', companiesResponse);
+  console.log('Orders API Response:', orders);
+  console.log('Available Tokens:', availableTokens);
+  console.log('All Companies:', allCompanies);
+  console.log('Filtered Companies (with tokens):', companies);
+
+  // Log the first token structure to understand the data format
+  if (availableTokens.length > 0) {
+    console.log('First Token Structure:', availableTokens[0]);
+    console.log('First Token Company:', availableTokens[0].company);
+  }
+
+  console.log('Orders Data:', ordersArray);
 
   const queryClient = useQueryClient();
 
@@ -110,7 +100,6 @@ export default function Trading() {
       return await apiRequest('POST', `${baseUrl}${endpoint}`, {
         companyId: data.companyId,
         quantity: data.quantity,
-        pricePerToken: data.price,
       });
     },
     onSuccess: () => {
@@ -235,7 +224,7 @@ export default function Trading() {
                         <SelectValue placeholder='Choose a company' />
                       </SelectTrigger>
                       <SelectContent>
-                        {companiesLoading ? (
+                        {tokensLoading || companiesLoading ? (
                           <SelectItem value='loading' disabled>
                             Loading...
                           </SelectItem>
@@ -265,18 +254,6 @@ export default function Trading() {
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor='price'>Price per Token</Label>
-                    <Input
-                      id='price'
-                      type='number'
-                      step='0.01'
-                      placeholder='Enter price'
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                    />
-                  </div>
-
                   <Button
                     onClick={handlePlaceOrder}
                     className='w-full'
@@ -297,7 +274,7 @@ export default function Trading() {
                 </CardHeader>
                 <CardContent>
                   <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                    {companiesLoading ? (
+                    {tokensLoading || companiesLoading ? (
                       <div className='col-span-3 text-center py-4'>
                         Loading market data...
                       </div>
