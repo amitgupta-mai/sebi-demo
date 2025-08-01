@@ -35,18 +35,6 @@ export default function Header() {
           </div>
 
           <div className='flex items-center space-x-4'>
-            <div className='relative'>
-              <Button variant='ghost' size='sm' className='relative'>
-                <Bell className='h-5 w-5 text-gray-600' />
-                <Badge
-                  variant='destructive'
-                  className='absolute -top-1 -right-1 h-5 w-5 text-xs flex items-center justify-center p-0'
-                >
-                  3
-                </Badge>
-              </Button>
-            </div>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

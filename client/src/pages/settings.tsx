@@ -375,6 +375,17 @@ export default function Settings() {
                     </div>
 
                     <div>
+                      <Label htmlFor='walletAddress'>Wallet Address</Label>
+                      <Input
+                        id='walletAddress'
+                        value={userProfile?.walletAddress || ''}
+                        disabled
+                        className='bg-gray-50 text-gray-600'
+                        placeholder='No wallet address available'
+                      />
+                    </div>
+
+                    <div>
                       <Label htmlFor='email'>Email Address</Label>
                       <Input
                         id='email'

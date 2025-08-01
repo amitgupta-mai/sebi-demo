@@ -104,6 +104,16 @@ const createRequestWithAuth = async (
     credentials: 'include',
   });
 
+  // Handle 404 Not Found
+  if (response.status === 404) {
+    console.error(`404 Not Found: ${url}`);
+    // Create a custom error with more context
+    const error = new Error(`Resource not found: ${url}`);
+    (error as any).status = 404;
+    (error as any).url = url;
+    throw error;
+  }
+
   // Handle 401 Unauthorized
   if (response.status === 401) {
     // Try to refresh the token
@@ -144,6 +154,11 @@ export async function apiRequest(
 
   if (!response.ok) {
     const text = (await response.text()) || response.statusText;
+
+    if (response.status === 404) {
+      throw new Error(`Resource not found: ${text}`);
+    }
+
     throw new Error(`${response.status}: ${text}`);
   }
 
@@ -174,6 +189,15 @@ export const getQueryFn: <T>(options: {
 
       if (!response.ok) {
         const text = (await response.text()) || response.statusText;
+
+        if (response.status === 404) {
+          console.error(`404 Not Found for query: ${queryPath}`);
+          const error = new Error(`Resource not found: ${text}`);
+          (error as any).status = 404;
+          (error as any).url = fullUrl;
+          throw error;
+        }
+
         throw new Error(`${response.status}: ${text}`);
       }
 
@@ -201,8 +225,13 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       staleTime: 30000, // 30 seconds
       retry: (failureCount, error) => {
-        // Don't retry on 401/403 errors
-        if (error instanceof Error && error.message.includes('401')) {
+        // Don't retry on 401/403/404 errors
+        if (
+          error instanceof Error &&
+          (error.message.includes('401') ||
+            error.message.includes('403') ||
+            error.message.includes('404'))
+        ) {
           return false;
         }
         return failureCount < 3;
