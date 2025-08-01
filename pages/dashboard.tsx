@@ -3,17 +3,22 @@ import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import PortfolioChart from '@/components/PortfolioChart';
 import HoldingsTable from '@/components/HoldingsTable';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
   TrendingUp,
+  TrendingDown,
   Tag,
   Coins,
-  ArrowRightLeft,
-  ChartPie,
+  Briefcase,
   ExternalLink,
+  ChartPie,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { Link } from 'wouter';
+import { DataLoading, TableLoading } from '@/components/LoadingSpinner';
 
 interface PortfolioSummary {
   totalPortfolioValue: string;
@@ -305,9 +310,7 @@ export default function Dashboard() {
                 </h3>
                 <div className='space-y-4'>
                   {transactionsLoading ? (
-                    <div className='text-center py-4'>
-                      Loading transactions...
-                    </div>
+                    <DataLoading text='Loading transactions...' />
                   ) : transactions && transactions.length > 0 ? (
                     transactions.slice(0, 5).map((transaction: Transaction) => (
                       <div

@@ -35,6 +35,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
 import { useQueryClient } from '@tanstack/react-query';
+import { PageLoading } from '@/components/LoadingSpinner';
 
 interface UserProfile {
   id: string;
@@ -233,19 +234,7 @@ export default function Settings() {
   };
 
   if (profileLoading) {
-    return (
-      <div className='min-h-screen bg-gray-50'>
-        <Header />
-        <div className='flex'>
-          <Sidebar />
-          <main className='flex-1 p-6'>
-            <div className='flex items-center justify-center h-64'>
-              <Loader2 className='h-8 w-8 animate-spin' />
-            </div>
-          </main>
-        </div>
-      </div>
-    );
+    return <PageLoading />;
   }
 
   return (

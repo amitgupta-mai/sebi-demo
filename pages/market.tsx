@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
@@ -24,11 +25,16 @@ import {
   IndianRupee,
   BarChart3,
   Volume2,
+  Coins,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react';
+import { DataLoading } from '@/components/LoadingSpinner';
 
 export default function Market() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [orderType, setOrderType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState<string>('');
@@ -124,9 +130,13 @@ export default function Market() {
       });
     },
     onSuccess: () => {
+      const userName = user?.firstName
+        ? `${user.firstName} ${user.lastName || ''}`.trim()
+        : 'User';
+      const action = orderType === 'buy' ? 'bought' : 'sold';
       toast({
         title: 'Success',
-        description: 'Order placed successfully!',
+        description: `${action} ${quantity} tokens for user ${userName}`,
       });
       setSelectedCompanyId('');
       setQuantity('');

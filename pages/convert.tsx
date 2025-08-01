@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Undo2, Calculator, AlertCircle } from 'lucide-react';
+import { DataLoading } from '@/components/LoadingSpinner';
 
 export default function Convert() {
   const { toast } = useToast();
@@ -204,7 +205,7 @@ export default function Convert() {
                     <SelectContent>
                       {companiesLoading ? (
                         <SelectItem value='loading' disabled>
-                          Loading...
+                          <DataLoading text='Loading companies...' />
                         </SelectItem>
                       ) : companies && companies.length > 0 ? (
                         companies.map((company: any) => {

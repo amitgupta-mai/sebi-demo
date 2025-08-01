@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { TrendingUp, TrendingDown, Tag, Coins, Briefcase } from 'lucide-react';
 import { getUniqueCompanies } from '@/lib/utils';
+import { DataLoading } from '@/components/LoadingSpinner';
 
 interface PortfolioSummary {
   totalPortfolioValue: string;
@@ -357,13 +358,8 @@ export default function Portfolio() {
             </CardHeader>
             <CardContent>
               {holdingsLoading || tokensLoading ? (
-                <div className='text-center py-8'>Loading holdings...</div>
-              ) : validHoldings.length === 0 ? (
-                <div className='text-center py-8 text-gray-500'>
-                  <Briefcase className='mx-auto h-12 w-12 text-gray-300 mb-4' />
-                  <p>No holdings found</p>
-                </div>
-              ) : (
+                <DataLoading text='Loading holdings...' />
+              ) : allHoldings.length > 0 ? (
                 <div className='space-y-4'>
                   {validHoldings.map((holding, index) => (
                     <div
@@ -476,6 +472,11 @@ export default function Portfolio() {
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : (
+                <div className='text-center py-8 text-gray-500'>
+                  <Briefcase className='mx-auto h-12 w-12 text-gray-300 mb-4' />
+                  <p>No holdings found</p>
                 </div>
               )}
             </CardContent>

@@ -25,6 +25,7 @@ import {
   History,
   ExternalLink,
 } from 'lucide-react';
+import { DataLoading } from '@/components/LoadingSpinner';
 
 export default function Transactions() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -222,7 +223,7 @@ export default function Transactions() {
             </CardHeader>
             <CardContent>
               {transactionsLoading ? (
-                <div className='text-center py-8'>Loading transactions...</div>
+                <DataLoading />
               ) : filteredTransactions.length === 0 ? (
                 <div className='text-center py-8 text-gray-500'>
                   <History className='mx-auto h-12 w-12 text-gray-300 mb-4' />

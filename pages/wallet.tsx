@@ -37,6 +37,7 @@ import {
   Clock,
   CreditCard,
 } from 'lucide-react';
+import { DataLoading } from '@/components/LoadingSpinner';
 
 export default function Wallet() {
   const { toast } = useToast();
@@ -784,14 +785,8 @@ export default function Wallet() {
               <CardContent>
                 <div className='space-y-4'>
                   {transactionsLoading ? (
-                    <p className='text-center text-gray-500'>
-                      Loading transactions...
-                    </p>
-                  ) : walletTransactions?.length === 0 ? (
-                    <p className='text-center text-gray-500'>
-                      No transactions yet
-                    </p>
-                  ) : (
+                    <DataLoading text='Loading transactions...' />
+                  ) : walletTransactions && walletTransactions.length > 0 ? (
                     <div className='max-h-96 overflow-y-auto'>
                       {walletTransactions?.map((transaction: any) => (
                         <div
@@ -855,6 +850,10 @@ export default function Wallet() {
                         </div>
                       ))}
                     </div>
+                  ) : (
+                    <p className='text-center text-gray-500'>
+                      No transactions yet
+                    </p>
                   )}
                 </div>
               </CardContent>

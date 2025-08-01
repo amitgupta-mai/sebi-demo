@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,14 +19,15 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, ArrowLeftRight } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
-import { useQueryClient } from '@tanstack/react-query';
+import { DataLoading } from '@/components/LoadingSpinner';
 
 export default function Trading() {
   const { toast } = useToast();
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const { user } = useAuth();
   const [orderType, setOrderType] = useState<'buy' | 'sell'>('buy');
-  const [quantity, setQuantity] = useState<string>('');
-  const [price, setPrice] = useState<string>('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [price, setPrice] = useState('');
 
   const { data: availableTokensResponse, isLoading: tokensLoading } = useQuery<{
     success: boolean;
@@ -114,9 +116,13 @@ export default function Trading() {
       });
     },
     onSuccess: () => {
+      const userName = user?.firstName
+        ? `${user.firstName} ${user.lastName || ''}`.trim()
+        : 'User';
+      const action = orderType === 'buy' ? 'bought' : 'sold';
       toast({
         title: 'Success',
-        description: 'Order placed successfully!',
+        description: `${userName} ${action} ${quantity} tokens successfully!`,
       });
       setSelectedCompanyId('');
       setQuantity('');
@@ -241,7 +247,7 @@ export default function Trading() {
                         marketTokensLoading ||
                         companiesLoading ? (
                           <SelectItem value='loading' disabled>
-                            Loading...
+                            <DataLoading text='Loading companies...' />
                           </SelectItem>
                         ) : companies && companies.length > 0 ? (
                           companies.map((company: any) => (
@@ -293,9 +299,7 @@ export default function Trading() {
                 <CardContent>
                   <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                     {tokensLoading || companiesLoading ? (
-                      <div className='col-span-3 text-center py-4'>
-                        Loading market data...
-                      </div>
+                      <DataLoading text='Loading market data...' />
                     ) : companies && companies.length > 0 ? (
                       companies.map((company: any) => (
                         <div
@@ -346,8 +350,8 @@ export default function Trading() {
                 </CardHeader>
                 <CardContent>
                   {ordersLoading ? (
-                    <div className='text-center py-4'>Loading...</div>
-                  ) : ordersArray.length > 0 ? (
+                    <DataLoading text='Loading orders...' />
+                  ) : ordersArray && ordersArray.length > 0 ? (
                     <div className='space-y-4'>
                       {ordersArray.map((order: any) => (
                         <div
