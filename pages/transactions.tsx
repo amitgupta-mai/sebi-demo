@@ -118,7 +118,9 @@ export default function Transactions() {
   };
 
   const generateKalpScanUrl = (transactionHash: string) => {
-    return `https://kalpscan.io/transactions?transactionId=${transactionHash}&network=testnet`;
+    return `${
+      import.meta.env.VITE_API_EXPLORER_URL
+    }?transactionId=${transactionHash}&network=testnet`;
   };
 
   // Filter and sort transactions
