@@ -1,74 +1,54 @@
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Users,
-  Activity,
-} from 'lucide-react';
-
-interface HoldingsData {
-  shares: any[];
-  tokens: any[];
-}
+import PortfolioChart from '@/components/PortfolioChart';
+import HoldingsTable from '@/components/HoldingsTable';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { TrendingUp, Tag, Coins, ArrowRightLeft, ChartPie } from 'lucide-react';
+import { Link } from 'wouter';
 
 interface PortfolioSummary {
-  totalPortfolioValue: string;
-  totalSharesValue: number;
-  totalTokensValue: number;
-  cashBalance: string;
-  totalProfitLoss: number;
-  totalSharesProfitLoss: number;
-  totalTokensProfitLoss: number;
-  totalHoldings: number;
-  sharesCount: number;
-  tokensCount: number;
+  totalValue?: number;
+  realSharesValue?: number;
+  tokenizedSharesValue?: number;
+  totalHoldings?: number;
+  totalTokens?: number;
+  activeOrders?: number;
+}
+
+interface Transaction {
+  id: string;
+  transactionType: string;
+  company: {
+    symbol: string;
+  };
+  quantity: number;
+  totalAmount: string;
+  createdAt: string;
 }
 
 export default function Dashboard() {
-  const { data: portfolioSummaryResponse, isLoading: summaryLoading } =
-    useQuery<{
-      success: boolean;
-      message: string;
-      data: PortfolioSummary;
-    }>({
-      queryKey: ['/api/portfolio/overview'],
+  const { data: portfolioSummary = {}, isLoading: summaryLoading } =
+    useQuery<PortfolioSummary>({
+      queryKey: ['/api/portfolio/summary'],
     });
 
-  const { data: holdingsDataResponse, isLoading: holdingsLoading } = useQuery<{
-    success: boolean;
-    message: string;
-    data: HoldingsData;
-  }>({
-    queryKey: ['/api/portfolio/holdings'],
+  const { data: holdings = [], isLoading: holdingsLoading } = useQuery<any[]>({
+    queryKey: ['/api/holdings'],
   });
 
-  const { data: tokenizedSharesResponse, isLoading: tokensLoading } = useQuery<{
-    success: boolean;
-    message: string;
-    data: any[];
-  }>({
-    queryKey: ['/api/tokens/available'],
+  const { data: tokenizedShares = [], isLoading: tokensLoading } = useQuery<
+    any[]
+  >({
+    queryKey: ['/api/tokenized-shares'],
   });
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery<
-    any[] | { data: any[] }
+    Transaction[]
   >({
     queryKey: ['/api/transactions'],
   });
-
-  // Extract portfolio summary from API response
-  const portfolioSummary = portfolioSummaryResponse?.data;
-
-  // Extract holdings data from API response
-  const holdingsData = holdingsDataResponse?.data;
-
-  // Extract tokenized shares from API response
-  const tokenizedShares = tokenizedSharesResponse?.data || [];
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -79,65 +59,15 @@ export default function Dashboard() {
     }).format(amount);
   };
 
-  // Function to safely parse malformed numeric values from API
-  const safeParseNumber = (value: any): number => {
-    if (typeof value === 'number') return value;
-    if (!value || typeof value !== 'string') return 0;
-
-    // Remove any non-numeric characters except decimal point and minus
-    const cleaned = value.replace(/[^\d.-]/g, '');
-    const parsed = parseFloat(cleaned);
-    return isNaN(parsed) ? 0 : parsed;
+  const getCompanyLogoClass = (symbol: string) => {
+    const symbolLower = symbol.toLowerCase();
+    if (symbolLower === 'tcs') return 'company-logo tcs';
+    if (symbolLower === 'reliance') return 'company-logo reliance';
+    if (symbolLower === 'infy') return 'company-logo infy';
+    if (symbolLower === 'hdfcbank') return 'company-logo hdfcbank';
+    if (symbolLower === 'icicibank') return 'company-logo icicibank';
+    return 'company-logo default';
   };
-
-  const formatPercentage = (value: number) => {
-    return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
-  };
-
-  // Extract data from holdings with proper error handling
-  const shares = holdingsData?.shares || [];
-  const tokens = holdingsData?.tokens || [];
-
-  const allHoldings = [
-    ...shares.map((holding: any) => ({
-      ...holding,
-      type: 'share',
-      company: {
-        name: holding.companyName || holding.company?.name,
-        symbol: holding.companySymbol || holding.company?.symbol,
-        currentPrice: holding.currentPrice || holding.company?.currentPrice,
-      },
-      currentValue:
-        parseFloat(holding.currentPrice || holding.company?.currentPrice || 0) *
-        holding.quantity,
-      pnl: 0,
-      pnlPercentage: 0,
-    })),
-    ...tokens.map((token: any) => ({
-      ...token,
-      type: 'token',
-      company: {
-        name: token.companyName || token.company?.name,
-        symbol: token.companySymbol || token.company?.symbol,
-        currentPrice: token.currentPrice || token.company?.currentPrice,
-      },
-      currentValue:
-        parseFloat(token.currentPrice || token.company?.currentPrice || 0) *
-        token.quantity,
-      pnl: 0,
-      pnlPercentage: 0,
-    })),
-  ];
-
-  const totalHoldings = shares.length + tokens.length;
-
-  // Ensure transactions is always an array and handle API response structure
-  const transactionsArray = Array.isArray(transactions)
-    ? transactions
-    : transactions?.data && Array.isArray(transactions.data)
-    ? transactions.data
-    : [];
-  const recentTransactions = transactionsArray.slice(0, 5);
 
   return (
     <div className='min-h-screen bg-gray-50'>
@@ -147,206 +77,317 @@ export default function Dashboard() {
         <Sidebar />
 
         <main className='flex-1 p-6'>
-          <div className='mb-8'>
-            <h1 className='text-3xl font-bold text-gray-900'>Dashboard</h1>
-            <p className='text-gray-600'>
-              Welcome back! Here's your portfolio overview.
-            </p>
-          </div>
-
-          {/* Portfolio Summary Cards */}
+          {/* Portfolio Overview Cards */}
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
             <Card>
-              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                <CardTitle className='text-sm font-medium'>
-                  Total Portfolio Value
-                </CardTitle>
-                <DollarSign className='h-4 w-4 text-muted-foreground' />
-              </CardHeader>
-              <CardContent>
-                <div className='text-2xl font-bold'>
-                  {summaryLoading
-                    ? '...'
-                    : formatCurrency(
-                        safeParseNumber(portfolioSummary?.totalPortfolioValue)
-                      )}
+              <CardContent className='p-6'>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <p className='text-sm font-medium text-gray-600'>
+                      Total Portfolio Value
+                    </p>
+                    <p className='text-2xl font-bold text-gray-900'>
+                      {summaryLoading
+                        ? '...'
+                        : formatCurrency(portfolioSummary?.totalValue || 0)}
+                    </p>
+                    <p className='text-sm text-secondary mt-1'>
+                      <TrendingUp className='inline w-4 h-4 mr-1' />
+                      +8.5% from last month
+                    </p>
+                  </div>
+                  <div className='w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center'>
+                    <ChartPie className='h-6 w-6 text-blue-600' />
+                  </div>
                 </div>
-                <p className='text-xs text-muted-foreground'>
-                  {portfolioSummary?.totalProfitLoss ? (
-                    <span
-                      className={
-                        safeParseNumber(portfolioSummary.totalProfitLoss) >= 0
-                          ? 'text-green-600'
-                          : 'text-red-600'
-                      }
-                    >
-                      {formatPercentage(
-                        safeParseNumber(portfolioSummary.totalProfitLoss)
-                      )}
-                    </span>
-                  ) : (
-                    'No change'
-                  )}
-                </p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                <CardTitle className='text-sm font-medium'>
-                  Total Holdings
-                </CardTitle>
-                <Activity className='h-4 w-4 text-muted-foreground' />
-              </CardHeader>
-              <CardContent>
-                <div className='text-2xl font-bold'>{totalHoldings}</div>
-                <p className='text-xs text-muted-foreground'>
-                  {shares.length} shares, {tokens.length} tokens
-                </p>
+              <CardContent className='p-6'>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <p className='text-sm font-medium text-gray-600'>
+                      Real Shares
+                    </p>
+                    <p className='text-2xl font-bold text-gray-900'>
+                      {summaryLoading
+                        ? '...'
+                        : formatCurrency(
+                            portfolioSummary?.realSharesValue || 0
+                          )}
+                    </p>
+                    <p className='text-sm text-gray-500 mt-1'>
+                      {summaryLoading
+                        ? '...'
+                        : `${portfolioSummary?.totalHoldings || 0} holdings`}
+                    </p>
+                  </div>
+                  <div className='w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center'>
+                    <Tag className='h-6 w-6 text-green-600' />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                <CardTitle className='text-sm font-medium'>
-                  Total Invested
-                </CardTitle>
-                <TrendingUp className='h-4 w-4 text-muted-foreground' />
-              </CardHeader>
-              <CardContent>
-                <div className='text-2xl font-bold'>
-                  {summaryLoading
-                    ? '...'
-                    : formatCurrency(
-                        Number(portfolioSummary?.totalSharesValue) || 0
-                      )}
+              <CardContent className='p-6'>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <p className='text-sm font-medium text-gray-600'>
+                      Tokenized Shares
+                    </p>
+                    <p className='text-2xl font-bold text-gray-900'>
+                      {summaryLoading
+                        ? '...'
+                        : formatCurrency(
+                            portfolioSummary?.tokenizedSharesValue || 0
+                          )}
+                    </p>
+                    <p className='text-sm text-gray-500 mt-1'>
+                      {summaryLoading
+                        ? '...'
+                        : `${portfolioSummary?.totalTokens || 0} tokens`}
+                    </p>
+                  </div>
+                  <div className='w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center'>
+                    <Coins className='h-6 w-6 text-orange-600' />
+                  </div>
                 </div>
-                <p className='text-xs text-muted-foreground'>
-                  Initial investment
-                </p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                <CardTitle className='text-sm font-medium'>Total P&L</CardTitle>
-                <TrendingDown className='h-4 w-4 text-muted-foreground' />
-              </CardHeader>
-              <CardContent>
-                <div className='text-2xl font-bold'>
-                  {summaryLoading
-                    ? '...'
-                    : formatCurrency(
-                        Number(portfolioSummary?.totalProfitLoss) || 0
-                      )}
+              <CardContent className='p-6'>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <p className='text-sm font-medium text-gray-600'>
+                      Active Orders
+                    </p>
+                    <p className='text-2xl font-bold text-gray-900'>
+                      {summaryLoading
+                        ? '...'
+                        : portfolioSummary?.activeOrders || 0}
+                    </p>
+                    <p className='text-sm text-destructive mt-1'>
+                      Pending execution
+                    </p>
+                  </div>
+                  <div className='w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center'>
+                    <ArrowRightLeft className='h-6 w-6 text-red-600' />
+                  </div>
                 </div>
-                <p className='text-xs text-muted-foreground'>
-                  {portfolioSummary?.totalProfitLoss ? (
-                    <span
-                      className={
-                        portfolioSummary.totalProfitLoss >= 0
-                          ? 'text-green-600'
-                          : 'text-red-600'
-                      }
-                    >
-                      {formatPercentage(portfolioSummary.totalProfitLoss)}
-                    </span>
-                  ) : (
-                    'No change'
-                  )}
-                </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Recent Activity */}
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+          <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8'>
+            {/* Portfolio Chart */}
+            <div className='lg:col-span-2'>
+              <PortfolioChart />
+            </div>
+
+            {/* Quick Actions */}
             <Card>
-              <CardHeader>
-                <CardTitle>Recent Transactions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {transactionsLoading ? (
-                  <div className='text-center py-4'>Loading...</div>
-                ) : recentTransactions.length > 0 ? (
-                  <div className='space-y-4'>
-                    {recentTransactions.map((transaction: any) => (
+              <CardContent className='p-6'>
+                <h3 className='text-lg font-semibold text-gray-900 mb-6'>
+                  Quick Actions
+                </h3>
+                <div className='space-y-4'>
+                  <Button
+                    asChild
+                    className='w-full bg-primary hover:bg-blue-700'
+                  >
+                    <Link href='/tokenize'>
+                      <Coins className='mr-2 h-4 w-4' />
+                      Tokenize Shares
+                    </Link>
+                  </Button>
+
+                  <Button
+                    asChild
+                    className='w-full bg-secondary hover:bg-green-700'
+                  >
+                    <Link href='/trading'>
+                      <ArrowRightLeft className='mr-2 h-4 w-4' />
+                      Trade Tokens
+                    </Link>
+                  </Button>
+
+                  <Button asChild className='w-full btn-convert'>
+                    <Link href='/convert'>
+                      <Tag className='mr-2 h-4 w-4' />
+                      Convert to Shares
+                    </Link>
+                  </Button>
+
+                  <Button asChild variant='outline' className='w-full'>
+                    <Link href='/portfolio'>
+                      <TrendingUp className='mr-2 h-4 w-4' />
+                      View Full Portfolio
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Holdings Table */}
+          <HoldingsTable
+            holdings={holdings}
+            tokenizedShares={tokenizedShares}
+            loading={holdingsLoading || tokensLoading}
+          />
+
+          {/* Recent Transactions */}
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8'>
+            <Card>
+              <CardContent className='p-6'>
+                <h3 className='text-lg font-semibold text-gray-900 mb-6'>
+                  Recent Transactions
+                </h3>
+                <div className='space-y-4'>
+                  {transactionsLoading ? (
+                    <div className='text-center py-4'>
+                      Loading transactions...
+                    </div>
+                  ) : transactions && transactions.length > 0 ? (
+                    transactions.slice(0, 5).map((transaction: Transaction) => (
                       <div
                         key={transaction.id}
-                        className='flex items-center justify-between'
+                        className='flex items-center justify-between p-4 bg-gray-50 rounded-lg'
                       >
-                        <div>
-                          <p className='font-medium'>
-                            {transaction.company?.symbol || 'Unknown'}
-                          </p>
-                          <p className='text-sm text-gray-600'>
-                            {transaction.transactionType}
-                          </p>
+                        <div className='flex items-center space-x-3'>
+                          <div className='w-8 h-8 bg-green-100 rounded-full flex items-center justify-center'>
+                            <Coins className='h-4 w-4 text-green-600' />
+                          </div>
+                          <div>
+                            <p className='text-sm font-medium text-gray-900'>
+                              {transaction.transactionType === 'tokenize'
+                                ? 'Tokenized'
+                                : transaction.transactionType === 'detokenize'
+                                ? 'Converted'
+                                : transaction.transactionType === 'trade_buy'
+                                ? 'Bought'
+                                : 'Sold'}{' '}
+                              {transaction.company.symbol}
+                            </p>
+                            <p className='text-xs text-gray-500'>
+                              {new Date(
+                                transaction.createdAt
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
                         </div>
                         <div className='text-right'>
-                          <p className='font-medium'>
-                            {formatCurrency(transaction.totalAmount)}
+                          <p className='text-sm font-medium text-gray-900'>
+                            {transaction.quantity} shares
                           </p>
-                          <p className='text-sm text-gray-600'>
-                            {transaction.status}
+                          <p className='text-xs text-secondary'>
+                            {formatCurrency(
+                              parseFloat(transaction.totalAmount)
+                            )}
                           </p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className='text-center py-4 text-gray-500'>
-                    No recent transactions
-                  </div>
-                )}
+                    ))
+                  ) : (
+                    <div className='text-center py-4 text-gray-500'>
+                      No transactions yet
+                    </div>
+                  )}
+
+                  <Button asChild variant='outline' className='w-full'>
+                    <Link href='/transactions'>View All Transactions</Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
+            {/* Market Overview */}
             <Card>
-              <CardHeader>
-                <CardTitle>Top Holdings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {holdingsLoading ? (
-                  <div className='text-center py-4'>Loading...</div>
-                ) : allHoldings.length > 0 ? (
-                  <div className='space-y-4'>
-                    {allHoldings.slice(0, 5).map((holding: any) => (
-                      <div
-                        key={holding.id}
-                        className='flex items-center justify-between'
-                      >
-                        <div>
-                          <p className='font-medium'>
-                            {holding.company?.symbol || 'Unknown'}
-                          </p>
-                          <p className='text-sm text-gray-600'>
-                            {holding.quantity}{' '}
-                            {holding.type === 'token' ? 'tokens' : 'shares'}
-                          </p>
-                        </div>
-                        <div className='text-right'>
-                          <p className='font-medium'>
-                            {formatCurrency(holding.currentValue)}
-                          </p>
-                          <p
-                            className={`text-sm ${
-                              holding.pnl >= 0
-                                ? 'text-green-600'
-                                : 'text-red-600'
-                            }`}
-                          >
-                            {formatPercentage(holding.pnlPercentage)}
-                          </p>
-                        </div>
+              <CardContent className='p-6'>
+                <h3 className='text-lg font-semibold text-gray-900 mb-6'>
+                  NSE Market Overview
+                </h3>
+                <div className='space-y-4'>
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center space-x-3'>
+                      <div className={getCompanyLogoClass('TCS')}>
+                        <span>TCS</span>
                       </div>
-                    ))}
+                      <div>
+                        <p className='text-sm font-medium text-gray-900'>TCS</p>
+                        <p className='text-xs text-gray-500'>
+                          Tata Consultancy
+                        </p>
+                      </div>
+                    </div>
+                    <div className='text-right'>
+                      <p className='text-sm font-medium text-gray-900'>
+                        ₹3,456.80
+                      </p>
+                      <p className='text-xs text-secondary'>+2.5%</p>
+                    </div>
                   </div>
-                ) : (
-                  <div className='text-center py-4 text-gray-500'>
-                    No holdings yet
+
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center space-x-3'>
+                      <div className={getCompanyLogoClass('RELIANCE')}>
+                        <span>REL</span>
+                      </div>
+                      <div>
+                        <p className='text-sm font-medium text-gray-900'>
+                          RELIANCE
+                        </p>
+                        <p className='text-xs text-gray-500'>
+                          Reliance Industries
+                        </p>
+                      </div>
+                    </div>
+                    <div className='text-right'>
+                      <p className='text-sm font-medium text-gray-900'>
+                        ₹2,845.30
+                      </p>
+                      <p className='text-xs text-destructive'>-1.2%</p>
+                    </div>
                   </div>
-                )}
+
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center space-x-3'>
+                      <div className={getCompanyLogoClass('INFY')}>
+                        <span>INF</span>
+                      </div>
+                      <div>
+                        <p className='text-sm font-medium text-gray-900'>
+                          INFY
+                        </p>
+                        <p className='text-xs text-gray-500'>Infosys</p>
+                      </div>
+                    </div>
+                    <div className='text-right'>
+                      <p className='text-sm font-medium text-gray-900'>
+                        ₹1,678.90
+                      </p>
+                      <p className='text-xs text-secondary'>+3.8%</p>
+                    </div>
+                  </div>
+
+                  <div className='mt-6 p-4 bg-blue-50 rounded-lg'>
+                    <div className='flex items-center justify-between mb-2'>
+                      <span className='text-sm font-medium text-gray-600'>
+                        NIFTY 50
+                      </span>
+                      <span className='text-sm font-bold text-gray-900'>
+                        21,456.30
+                      </span>
+                    </div>
+                    <div className='flex items-center text-secondary text-sm'>
+                      <TrendingUp className='w-4 h-4 mr-1' />
+                      <span>+142.50 (+0.67%)</span>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

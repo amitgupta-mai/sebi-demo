@@ -145,6 +145,16 @@ export default function Trading() {
     return `${value >= 0 ? '+' : ''}${value?.toFixed?.(2)}%`;
   };
 
+  const getCompanyLogoClass = (symbol: string) => {
+    const symbolLower = symbol.toLowerCase();
+    if (symbolLower === 'tcs') return 'company-logo tcs';
+    if (symbolLower === 'reliance') return 'company-logo reliance';
+    if (symbolLower === 'infy') return 'company-logo infy';
+    if (symbolLower === 'hdfcbank') return 'company-logo hdfcbank';
+    if (symbolLower === 'icicibank') return 'company-logo icicibank';
+    return 'company-logo default';
+  };
+
   const handlePlaceOrder = () => {
     if (!selectedCompanyId || !quantity || !price) {
       toast({
@@ -287,53 +297,49 @@ export default function Trading() {
                 </CardHeader>
                 <CardContent>
                   <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                    {companies.slice(0, 6).map((company: any) => {
-                      const priceChange = (Math.random() - 0.5) * 10;
-                      const changePercent =
-                        (priceChange / parseFloat(company?.currentPrice || 1)) *
-                        100;
-
-                      return (
+                    {companiesLoading ? (
+                      <div className='col-span-3 text-center py-4'>
+                        Loading market data...
+                      </div>
+                    ) : companies && companies.length > 0 ? (
+                      companies.map((company: any) => (
                         <div
-                          key={company?.id}
-                          className='flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow'
+                          key={company.id}
+                          className='border border-gray-200 rounded-lg p-4'
                         >
-                          <div className='flex items-center space-x-3'>
+                          <div className='flex items-center space-x-3 mb-2'>
                             <div
-                              className={`w-10 h-10 rounded-lg flex items-center justify-center font-semibold text-sm bg-blue-100 text-blue-700`}
+                              className={getCompanyLogoClass(company.symbol)}
                             >
                               <span>
-                                {company?.symbol
-                                  ?.substring(0, 3)
-                                  ?.toUpperCase()}
+                                {company.symbol.substring(0, 3).toUpperCase()}
                               </span>
                             </div>
                             <div>
-                              <p className='font-bold text-lg text-gray-700'>
-                                {company?.symbol}
-                              </p>
-                              <p className='text-sm text-gray-500'>
-                                {company?.name}
+                              <h4 className='font-medium text-gray-900'>
+                                {company.symbol}
+                              </h4>
+                              <p className='text-xs text-gray-500'>
+                                {company.name}
                               </p>
                             </div>
                           </div>
                           <div className='text-right'>
-                            <p className='text-lg font-bold text-gray-700'>
-                              ₹
-                              {parseFloat(company?.currentPrice || 0).toFixed(
-                                2
-                              )}
+                            <p className='text-lg font-bold text-gray-900'>
+                              {formatCurrency(parseFloat(company.currentPrice))}
                             </p>
-                            <div className='flex items-center justify-end text-green-600 mt-1'>
-                              <TrendingUp className='h-4 w-4 mr-1' />
-                              <span className='text-sm font-medium'>
-                                +{formatPercentage(changePercent)}
-                              </span>
-                            </div>
+                            <p className='text-sm text-green-600 flex items-center justify-end'>
+                              <TrendingUp className='w-3 h-3 mr-1' />
+                              +2.5%
+                            </p>
                           </div>
                         </div>
-                      );
-                    })}
+                      ))
+                    ) : (
+                      <div className='col-span-3 text-center py-4 text-gray-500'>
+                        No market data available
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
