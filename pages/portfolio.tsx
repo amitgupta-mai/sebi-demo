@@ -159,8 +159,6 @@ export default function Portfolio() {
   // Get unique companies from holdings
   const uniqueCompanies = getUniqueCompanies(validHoldings);
 
-
-
   const totalPnL = allHoldings.reduce((sum, holding) => sum + holding.pnl, 0);
   const totalInvested = allHoldings.reduce(
     (sum, holding) => sum + (holding.currentValue - holding.pnl),
@@ -212,14 +210,16 @@ export default function Portfolio() {
   const totalValue = safeParseNumber(portfolioData.totalPortfolioValue);
 
   const realSharesPercentage =
-    totalValue > 0
+    totalValue > 0 &&
+    portfolioData.totalSharesValue + portfolioData.totalTokensValue > 0
       ? (portfolioData.totalSharesValue /
           (portfolioData.totalSharesValue + portfolioData.totalTokensValue)) *
         100
       : 0;
 
   const tokenizedSharesPercentage =
-    totalValue > 0
+    totalValue > 0 &&
+    portfolioData.totalSharesValue + portfolioData.totalTokensValue > 0
       ? (portfolioData.totalTokensValue /
           (portfolioData.totalSharesValue + portfolioData.totalTokensValue)) *
         100
@@ -289,10 +289,19 @@ export default function Portfolio() {
                         {formatCurrency(
                           Number(portfolioData.totalSharesValue) || 0
                         )}{' '}
-                        ({realSharesPercentage.toFixed(1)}%)
+                        (
+                        {isNaN(realSharesPercentage)
+                          ? '0.0'
+                          : realSharesPercentage.toFixed(1)}
+                        %)
                       </span>
                     </div>
-                    <Progress value={realSharesPercentage} className='h-2' />
+                    <Progress
+                      value={
+                        isNaN(realSharesPercentage) ? 0 : realSharesPercentage
+                      }
+                      className='h-2'
+                    />
                   </div>
                   <div>
                     <div className='flex justify-between items-center mb-2'>
@@ -303,11 +312,19 @@ export default function Portfolio() {
                         {formatCurrency(
                           Number(portfolioData.totalTokensValue) || 0
                         )}{' '}
-                        ({tokenizedSharesPercentage.toFixed(1)}%)
+                        (
+                        {isNaN(tokenizedSharesPercentage)
+                          ? '0.0'
+                          : tokenizedSharesPercentage.toFixed(1)}
+                        %)
                       </span>
                     </div>
                     <Progress
-                      value={tokenizedSharesPercentage}
+                      value={
+                        isNaN(tokenizedSharesPercentage)
+                          ? 0
+                          : tokenizedSharesPercentage
+                      }
                       className='h-2'
                     />
                   </div>
