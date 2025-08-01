@@ -1,10 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
+import PortfolioChart from '@/components/PortfolioChart';
+import HoldingsTable from '@/components/HoldingsTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { TrendingUp, TrendingDown, Tag, Coins, Briefcase } from 'lucide-react';
+import { getUniqueCompanies } from '@/lib/utils';
 
 interface PortfolioSummary {
   totalPortfolioValue: string;
@@ -151,6 +154,12 @@ export default function Portfolio() {
   const validHoldings = allHoldings.filter((holding, index) => {
     return holding.company && holding.company.symbol;
   });
+
+  // Get unique companies from holdings
+  const uniqueCompanies = getUniqueCompanies(validHoldings);
+
+  console.log('Unique Companies:', uniqueCompanies);
+  console.log('Total Unique Companies:', uniqueCompanies.length);
 
   const totalPnL = allHoldings.reduce((sum, holding) => sum + holding.pnl, 0);
   const totalInvested = allHoldings.reduce(

@@ -52,3 +52,34 @@ export const get404ErrorDetails = (
   }
   return { message: 'Unknown error' };
 };
+
+// Utility function to get unique companies from holdings data
+export const getUniqueCompanies = (holdings: any[]): string[] => {
+  const validHoldings = holdings.filter(
+    (holding) => holding.company && holding.company.symbol
+  );
+  
+  return Array.from(
+    new Set(
+      validHoldings.map((holding) => holding.company?.symbol).filter(Boolean)
+    )
+  );
+};
+
+// Utility function to get unique companies with full company data
+export const getUniqueCompaniesWithData = (holdings: any[]): any[] => {
+  const validHoldings = holdings.filter(
+    (holding) => holding.company && holding.company.symbol
+  );
+  
+  const companyMap = new Map();
+  
+  validHoldings.forEach((holding) => {
+    const symbol = holding.company.symbol;
+    if (!companyMap.has(symbol)) {
+      companyMap.set(symbol, holding.company);
+    }
+  });
+  
+  return Array.from(companyMap.values());
+};
