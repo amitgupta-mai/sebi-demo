@@ -46,9 +46,27 @@ export default function Market() {
     queryKey: ['/api/market/companies'],
   });
 
-  const { data: marketData = [], isLoading: marketLoading } = useQuery({
+  const { data: marketDataResponse, isLoading: marketLoading } = useQuery<{
+    success: boolean;
+    message: string;
+    data: {
+      marketStats: {
+        totalCompanies: number;
+        totalMarketCap: string;
+        totalVolume: string;
+        gainers: number;
+        losers: number;
+      };
+      companies: any[];
+    };
+  }>({
     queryKey: ['/api/market/overview'],
   });
+
+  // Extract market data from API response
+  const marketData = marketDataResponse?.data;
+  const marketStats = marketData?.marketStats;
+  const allCompanies = marketData?.companies || [];
 
   const { data: tokenizedSharesResponse, isLoading: tokensLoading } = useQuery<{
     success: boolean;
@@ -82,8 +100,9 @@ export default function Market() {
   );
 
   // Debug: Log the API response
-  console.log('Available Tokens API Response:', tokenizedSharesResponse);
-  console.log('Tokenized Shares Data:', tokenizedShares);
+  console.log('Market Overview API Response:', marketDataResponse);
+  console.log('Market Stats:', marketStats);
+  console.log('All Companies:', allCompanies);
   console.log('Available Companies for Trading:', availableCompanies);
 
   const createOrderMutation = useMutation({
@@ -180,7 +199,7 @@ export default function Market() {
   };
 
   const handlePlaceOrder = () => {
-    if (!selectedCompanyId || !quantity || !price) {
+    if (!selectedCompanyId || !quantity) {
       toast({
         title: 'Error',
         description: 'Please fill all fields',
@@ -226,7 +245,7 @@ export default function Market() {
     });
   };
 
-  const selectedCompany = companies?.find(
+  const selectedCompany = allCompanies?.find(
     (c: any) => c.id === selectedCompanyId
   );
   const candlestickData = selectedCompany
@@ -259,7 +278,15 @@ export default function Market() {
                       <Activity className='h-5 w-5 text-blue-500' />
                       <div>
                         <p className='text-sm text-gray-600'>Market Cap</p>
-                        <p className='text-lg font-semibold'>₹2.84T</p>
+                        <p className='text-lg font-semibold'>
+                          ₹
+                          {marketStats?.totalMarketCap
+                            ? (
+                                parseFloat(marketStats.totalMarketCap) /
+                                1000000000000
+                              ).toFixed(1) + 'T'
+                            : '0T'}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -271,7 +298,14 @@ export default function Market() {
                       <Volume2 className='h-5 w-5 text-green-500' />
                       <div>
                         <p className='text-sm text-gray-600'>24h Volume</p>
-                        <p className='text-lg font-semibold'>₹145.2B</p>
+                        <p className='text-lg font-semibold'>
+                          ₹
+                          {marketStats?.totalVolume
+                            ? (
+                                parseFloat(marketStats.totalVolume) / 1000000000
+                              ).toFixed(1) + 'B'
+                            : '0B'}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -284,7 +318,7 @@ export default function Market() {
                       <div>
                         <p className='text-sm text-gray-600'>Gainers</p>
                         <p className='text-lg font-semibold text-green-600'>
-                          +2.4%
+                          {marketStats?.gainers || 0}
                         </p>
                       </div>
                     </div>
@@ -298,7 +332,7 @@ export default function Market() {
                       <div>
                         <p className='text-sm text-gray-600'>Losers</p>
                         <p className='text-lg font-semibold text-red-600'>
-                          -1.8%
+                          {marketStats?.losers || 0}
                         </p>
                       </div>
                     </div>
@@ -340,15 +374,17 @@ export default function Market() {
                         </tr>
                       </thead>
                       <tbody>
-                        {availableCompanies.map((company: any) => {
-                          const priceChange = (Math.random() - 0.5) * 10;
-                          const currentPrice =
-                            parseFloat(company.currentPrice) || 1; // Prevent division by zero
-                          const changePercent =
-                            (priceChange / currentPrice) * 100;
-                          const volume =
-                            Math.floor(Math.random() * 10000000) + 1000000;
-                          const marketCap = currentPrice * 1000000000;
+                        {allCompanies.map((company: any) => {
+                          const currentPrice = parseFloat(company.currentPrice);
+                          const previousClose = parseFloat(
+                            company.previousClose
+                          );
+                          const priceChange = company.priceChange;
+                          const changePercent = parseFloat(
+                            company.changePercentage
+                          );
+                          const volume = parseInt(company.volume);
+                          const marketCap = parseFloat(company.marketCap);
 
                           return (
                             <tr
@@ -366,9 +402,7 @@ export default function Market() {
                                 </div>
                               </td>
                               <td className='text-right py-3 px-4 font-medium'>
-                                {formatCurrency(
-                                  parseFloat(company.currentPrice)
-                                )}
+                                {formatCurrency(currentPrice)}
                               </td>
                               <td
                                 className={`text-right py-3 px-4 ${getPriceChangeClass(
@@ -443,9 +477,23 @@ export default function Market() {
                           parseFloat(selectedCompany.currentPrice)
                         )}
                       </div>
-                      <div className='text-green-600 flex items-center space-x-1'>
-                        <TrendingUp className='h-4 w-4' />
-                        <span>+2.34% (+₹78.50)</span>
+                      <div
+                        className={`flex items-center space-x-1 ${
+                          selectedCompany.isGaining
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }`}
+                      >
+                        {selectedCompany.isGaining ? (
+                          <TrendingUp className='h-4 w-4' />
+                        ) : (
+                          <TrendingDown className='h-4 w-4' />
+                        )}
+                        <span>
+                          {selectedCompany.changePercentage >= 0 ? '+' : ''}
+                          {selectedCompany.changePercentage}% (+₹
+                          {selectedCompany.priceChange})
+                        </span>
                       </div>
                     </div>
 
@@ -539,7 +587,7 @@ export default function Market() {
                         <SelectValue placeholder='Choose a company' />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableCompanies.map((company: any) => (
+                        {allCompanies.map((company: any) => (
                           <SelectItem key={company.id} value={company.id}>
                             {company.name} -{' '}
                             {formatCurrency(parseFloat(company.currentPrice))}

@@ -37,6 +37,19 @@ export default function Trading() {
     queryKey: ['/api/tokens/available'],
   });
 
+  const {
+    data: availableMarketTokensResponse,
+    isLoading: marketTokensLoading,
+  } = useQuery<{
+    success: boolean;
+    message: string;
+    data: {
+      transactions: any[];
+    };
+  }>({
+    queryKey: ['/api/transactions/sell'],
+  });
+
   const { data: companiesResponse, isLoading: companiesLoading } = useQuery<{
     success: boolean;
     message: string;
@@ -53,9 +66,22 @@ export default function Trading() {
     queryKey: ['/api/tokens/orders'],
   });
 
-  // Extract available tokens from API response
-  const availableTokens = availableTokensResponse?.data?.tokens || [];
+  // Extract available tokens from API response based on selected tab
+  const availableTokens =
+    orderType === 'buy'
+      ? availableMarketTokensResponse?.data?.transactions || []
+      : availableTokensResponse?.data?.tokens || [];
   const allCompanies = companiesResponse?.data?.companies || [];
+
+  // Debug logging
+  console.log('Current Tab:', orderType);
+  console.log(
+    'Available Tokens (from',
+    orderType === 'buy' ? 'market' : 'available',
+    '):',
+    availableTokens
+  );
+  console.log('All Companies:', allCompanies);
 
   // Extract unique companies that have available tokens
   const companies = allCompanies.filter((company) =>
@@ -68,22 +94,6 @@ export default function Trading() {
     ? orders.data
     : [];
 
-  // Debug: Log the API responses
-  console.log('Available Tokens API Response:', availableTokensResponse);
-  console.log('Companies API Response:', companiesResponse);
-  console.log('Orders API Response:', orders);
-  console.log('Available Tokens:', availableTokens);
-  console.log('All Companies:', allCompanies);
-  console.log('Filtered Companies (with tokens):', companies);
-
-  // Log the first token structure to understand the data format
-  if (availableTokens.length > 0) {
-    console.log('First Token Structure:', availableTokens[0]);
-    console.log('First Token Company:', availableTokens[0].company);
-  }
-
-  console.log('Orders Data:', ordersArray);
-
   const queryClient = useQueryClient();
 
   const orderMutation = useMutation({
@@ -91,7 +101,7 @@ export default function Trading() {
       companyId: string;
       orderType: 'buy' | 'sell';
       quantity: number;
-      price: number;
+      pricePerToken: string;
     }) => {
       const baseUrl =
         import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -100,6 +110,7 @@ export default function Trading() {
       return await apiRequest('POST', `${baseUrl}${endpoint}`, {
         companyId: data.companyId,
         quantity: data.quantity,
+        pricePerToken: data.pricePerToken,
       });
     },
     onSuccess: () => {
@@ -145,7 +156,7 @@ export default function Trading() {
   };
 
   const handlePlaceOrder = () => {
-    if (!selectedCompanyId || !quantity || !price) {
+    if (!selectedCompanyId || !quantity) {
       toast({
         title: 'Error',
         description: 'Please fill all fields',
@@ -169,8 +180,10 @@ export default function Trading() {
     orderMutation.mutate({
       companyId: selectedCompanyId,
       quantity: quantityNum,
-      price: priceNum,
       orderType: orderType,
+      pricePerToken: companies.find(
+        (company) => company.id === selectedCompanyId
+      )?.currentPrice,
     });
   };
 
@@ -224,14 +237,19 @@ export default function Trading() {
                         <SelectValue placeholder='Choose a company' />
                       </SelectTrigger>
                       <SelectContent>
-                        {tokensLoading || companiesLoading ? (
+                        {tokensLoading ||
+                        marketTokensLoading ||
+                        companiesLoading ? (
                           <SelectItem value='loading' disabled>
                             Loading...
                           </SelectItem>
                         ) : companies && companies.length > 0 ? (
                           companies.map((company: any) => (
                             <SelectItem key={company?.id} value={company?.id}>
-                              {company?.name} ({company?.symbol})
+                              {company?.name} ({company?.symbol}) -{' '}
+                              {formatCurrency(
+                                parseFloat(company?.currentPrice)
+                              )}
                             </SelectItem>
                           ))
                         ) : (
