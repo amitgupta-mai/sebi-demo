@@ -31,17 +31,11 @@ interface Transaction {
 export default function Dashboard() {
   const { data: portfolioSummary = {}, isLoading: summaryLoading } =
     useQuery<PortfolioSummary>({
-      queryKey: ['/api/portfolio/summary'],
+      queryKey: ['/api/portfolio/overview'],
     });
 
   const { data: holdings = [], isLoading: holdingsLoading } = useQuery<any[]>({
-    queryKey: ['/api/holdings'],
-  });
-
-  const { data: tokenizedShares = [], isLoading: tokensLoading } = useQuery<
-    any[]
-  >({
-    queryKey: ['/api/tokenized-shares'],
+    queryKey: ['/api/portfolio/holdings'],
   });
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery<
@@ -235,8 +229,8 @@ export default function Dashboard() {
           {/* Holdings Table */}
           <HoldingsTable
             holdings={holdings}
-            tokenizedShares={tokenizedShares}
-            loading={holdingsLoading || tokensLoading}
+            tokenizedShares={holdings?.tokens}
+            loading={holdingsLoading}
           />
 
           {/* Recent Transactions */}
