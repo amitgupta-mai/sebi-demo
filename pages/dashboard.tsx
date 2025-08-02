@@ -322,14 +322,13 @@ export default function Dashboard() {
                           </div>
                           <div>
                             <p className='text-sm font-medium text-gray-900'>
-                              {transaction.transactionType === 'tokenize'
+                              {transaction.transactionType === 'tokenization'
                                 ? 'Tokenized'
-                                : transaction.transactionType === 'detokenize'
+                                : transaction.transactionType === 'conversion'
                                 ? 'Converted'
-                                : transaction.transactionType === 'trade_buy'
+                                : transaction.transactionType === 'buy'
                                 ? 'Bought'
                                 : 'Sold'}{' '}
-                              {transaction.company?.symbol || 'Unknown'}
                             </p>
                             <p className='text-xs text-gray-500'>
                               {new Date(
@@ -356,7 +355,12 @@ export default function Dashboard() {
                         </div>
                         <div className='text-right'>
                           <p className='text-sm font-medium text-gray-900'>
-                            {transaction.quantity} shares
+                            {transaction.transactionType === 'tokenization'
+                              ? `${
+                                  (transaction as any).metadata
+                                    ?.tokenQuantity || transaction.quantity
+                                } tokens`
+                              : `${transaction.quantity} shares`}
                           </p>
                           <p className='text-xs text-secondary'>
                             {formatCurrency(

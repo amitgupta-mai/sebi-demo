@@ -121,7 +121,7 @@ export default function Market() {
         quantity: data.quantity,
       });
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       const userName = user?.firstName
         ? `${user.firstName} ${user.lastName || ''}`.trim()
         : 'User';
@@ -132,8 +132,20 @@ export default function Market() {
       });
       setSelectedCompanyId('');
       setQuantity('');
+
+      // Invalidate orders query
       queryClient.invalidateQueries({ queryKey: ['/api/tokens/orders'] });
+
+      // Invalidate available tokens query
       queryClient.invalidateQueries({ queryKey: ['/api/tokens/available'] });
+
+      // Invalidate transactions/sell query if it's a sell order
+      if (variables.orderType === 'sell') {
+        queryClient.invalidateQueries({ queryKey: ['/api/transactions/sell'] });
+      }
+
+      // Invalidate portfolio overview to refresh balance
+      queryClient.invalidateQueries({ queryKey: ['/api/portfolio/overview'] });
     },
     onError: (error: any) => {
       toast({

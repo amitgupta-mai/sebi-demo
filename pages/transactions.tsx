@@ -65,6 +65,7 @@ export default function Transactions() {
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'tokenize':
+      case 'tokenization':
         return <Coins className='h-4 w-4' />;
       case 'detokenize':
         return <Undo2 className='h-4 w-4' />;
@@ -80,6 +81,7 @@ export default function Transactions() {
   const getTransactionLabel = (type: string) => {
     switch (type) {
       case 'tokenize':
+      case 'tokenization':
         return 'Tokenization';
       case 'detokenize':
         return 'Conversion';
@@ -95,6 +97,7 @@ export default function Transactions() {
   const getTransactionColor = (type: string) => {
     switch (type) {
       case 'tokenize':
+      case 'tokenization':
         return 'bg-blue-100 text-blue-800';
       case 'detokenize':
         return 'bg-orange-100 text-orange-800';
@@ -190,7 +193,7 @@ export default function Transactions() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value='all'>All Transactions</SelectItem>
-                    <SelectItem value='tokenize'>Tokenization</SelectItem>
+                    <SelectItem value='tokenization'>Tokenization</SelectItem>
                     <SelectItem value='detokenize'>Conversion</SelectItem>
                     <SelectItem value='buy'>Buy Orders</SelectItem>
                     <SelectItem value='sell'>Sell Orders</SelectItem>
@@ -303,7 +306,12 @@ export default function Transactions() {
                         <div>
                           <p className='text-gray-500'>Quantity</p>
                           <p className='font-medium'>
-                            {transaction.quantity} shares
+                            {transaction.transactionType === 'tokenization'
+                              ? `${
+                                  transaction.metadata?.tokenQuantity ||
+                                  transaction.quantity
+                                } tokens`
+                              : `${transaction.quantity} shares`}
                           </p>
                         </div>
                         <div>

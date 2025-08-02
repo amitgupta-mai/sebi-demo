@@ -50,7 +50,7 @@ export default function TradingModal({
     }) => {
       return await apiRequest('POST', '/api/orders', data);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       toast({
         title: 'Success',
         description: 'Order placed successfully!',
@@ -59,7 +59,20 @@ export default function TradingModal({
       setQuantity('');
       setPrice('');
       onClose();
+
+      // Invalidate orders query
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+
+      // Invalidate transactions/sell query if it's a sell order
+      if (variables.orderType === 'sell') {
+        queryClient.invalidateQueries({ queryKey: ['/api/transactions/sell'] });
+      }
+
+      // Invalidate available tokens query to refresh available quantities
+      queryClient.invalidateQueries({ queryKey: ['/api/tokens/available'] });
+
+      // Invalidate portfolio overview to refresh balance
+      queryClient.invalidateQueries({ queryKey: ['/api/portfolio/overview'] });
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {

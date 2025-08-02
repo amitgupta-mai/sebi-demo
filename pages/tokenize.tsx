@@ -200,7 +200,9 @@ export default function Tokenize() {
                   <CardContent className='p-4'>
                     <div className='flex items-center justify-between'>
                       <div>
-                        <p className='text-sm text-gray-600'>Companies with shares</p>
+                        <p className='text-sm text-gray-600'>
+                          Companies with shares
+                        </p>
                         <p className='text-2xl font-bold text-gray-900'>
                           {companiesWithShares.length}
                         </p>
@@ -208,11 +210,16 @@ export default function Tokenize() {
                       <div>
                         <p className='text-sm text-gray-600'>Total shares</p>
                         <p className='text-2xl font-bold text-green-600'>
-                          {holdings.reduce((sum, holding) => sum + (holding.quantity || 0), 0)}
+                          {holdings.reduce(
+                            (sum, holding) => sum + (holding.quantity || 0),
+                            0
+                          )}
                         </p>
                       </div>
                       <div>
-                        <p className='text-sm text-gray-600'>Available for tokenization</p>
+                        <p className='text-sm text-gray-600'>
+                          Available for tokenization
+                        </p>
                         <p className='text-2xl font-bold text-blue-600'>
                           {companiesWithShares.length > 0 ? 'Ready' : 'None'}
                         </p>
@@ -254,11 +261,18 @@ export default function Tokenize() {
                                 Companies with shares
                               </div>
                               {companiesWithShares.map((company: any) => {
-                                const holding = holdings.find((h: any) => h.companyId === company.id);
+                                const holding = holdings.find(
+                                  (h: any) => h.companyId === company.id
+                                );
                                 return (
-                                  <SelectItem key={company.id} value={company.id}>
+                                  <SelectItem
+                                    key={company.id}
+                                    value={company.id}
+                                  >
                                     <div className='flex items-center justify-between w-full'>
-                                      <span>{company.name} ({company.symbol})</span>
+                                      <span>
+                                        {company.name} ({company.symbol})
+                                      </span>
                                       <span className='text-xs text-green-600 font-medium'>
                                         {holding?.quantity || 0} shares
                                       </span>
@@ -268,7 +282,7 @@ export default function Tokenize() {
                               })}
                             </>
                           )}
-                          
+
                           {/* Companies without shares - disabled */}
                           {companiesWithoutShares.length > 0 && (
                             <>
@@ -276,10 +290,18 @@ export default function Tokenize() {
                                 Other companies
                               </div>
                               {companiesWithoutShares.map((company: any) => (
-                                <SelectItem key={company.id} value={company.id} disabled>
+                                <SelectItem
+                                  key={company.id}
+                                  value={company.id}
+                                  disabled
+                                >
                                   <div className='flex items-center justify-between w-full opacity-50'>
-                                    <span>{company.name} ({company.symbol})</span>
-                                    <span className='text-xs text-gray-400'>No shares</span>
+                                    <span>
+                                      {company.name} ({company.symbol})
+                                    </span>
+                                    <span className='text-xs text-gray-400'>
+                                      No shares
+                                    </span>
                                   </div>
                                 </SelectItem>
                               ))}
@@ -337,13 +359,52 @@ export default function Tokenize() {
                     onChange={(e) => setQuantity(e.target.value)}
                     max={selectedHolding?.quantity || 0}
                     min='1'
+                    className={
+                      selectedHolding &&
+                      quantity &&
+                      (() => {
+                        const quantityNum = parseInt(quantity);
+                        return (
+                          isNaN(quantityNum) ||
+                          quantityNum < 1 ||
+                          quantityNum > selectedHolding.quantity
+                        );
+                      })()
+                        ? 'border-red-500 focus:border-red-500'
+                        : ''
+                    }
                   />
                   {selectedHolding && (
-                    <p className='text-xs text-gray-500 mt-1'>
-                      {selectedHolding.quantity > 0
-                        ? `Maximum: ${selectedHolding.quantity} shares`
-                        : "You don't have shares in this company"}
-                    </p>
+                    <div className='text-xs mt-1'>
+                      <p className='text-gray-500'>
+                        {selectedHolding.quantity > 0
+                          ? `Maximum: ${selectedHolding.quantity} shares`
+                          : "You don't have shares in this company"}
+                      </p>
+                      {quantity &&
+                        (() => {
+                          const quantityNum = parseInt(quantity);
+
+                          if (isNaN(quantityNum) || quantityNum < 1) {
+                            return (
+                              <p className='text-red-600 font-medium mt-1'>
+                                ⚠️ Please enter a valid number greater than 0
+                              </p>
+                            );
+                          }
+
+                          if (quantityNum > selectedHolding.quantity) {
+                            return (
+                              <p className='text-red-600 font-medium mt-1'>
+                                ⚠️ Number of Shares to Tokenize cannot be
+                                greater than maximum shares
+                              </p>
+                            );
+                          }
+
+                          return null;
+                        })()}
+                    </div>
                   )}
                 </div>
 
@@ -405,7 +466,10 @@ export default function Tokenize() {
                       !selectedHolding ||
                       !quantity ||
                       tokenizeMutation.isPending ||
-                      (selectedHolding && selectedHolding.quantity === 0)
+                      (selectedHolding && selectedHolding.quantity === 0) ||
+                      (selectedHolding &&
+                        quantity &&
+                        parseInt(quantity) > selectedHolding.quantity)
                     }
                     className='flex-1 bg-primary hover:bg-blue-700'
                   >
@@ -415,19 +479,6 @@ export default function Tokenize() {
                       ? 'No Shares Available'
                       : 'Tokenize Shares'}
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Tokenization History */}
-            <Card className='mt-8'>
-              <CardHeader>
-                <CardTitle>Recent Tokenizations</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className='text-center py-8 text-gray-500'>
-                  <Coins className='mx-auto h-12 w-12 text-gray-300 mb-4' />
-                  <p>Your tokenization history will appear here</p>
                 </div>
               </CardContent>
             </Card>
