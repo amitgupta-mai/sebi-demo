@@ -68,6 +68,25 @@ export default function Trading() {
     queryKey: ['/api/tokens/orders'],
   });
 
+  const { data: portfolioSummaryResponse, isLoading: balanceLoading } = useQuery<{
+    success: boolean;
+    message: string;
+    data: {
+      totalPortfolioValue: string;
+      totalSharesValue: number;
+      totalTokensValue: number;
+      cashBalance: string;
+      totalProfitLoss: number;
+      totalSharesProfitLoss: number;
+      totalTokensProfitLoss: number;
+      totalHoldings: number;
+      sharesCount: number;
+      tokensCount: number;
+    };
+  }>({
+    queryKey: ['/api/portfolio/overview'],
+  });
+
   // Extract available tokens from API response based on selected tab
   const availableTokens =
     orderType === 'buy'
@@ -143,6 +162,20 @@ export default function Trading() {
     return `${value >= 0 ? '+' : ''}${value?.toFixed?.(2)}%`;
   };
 
+  const safeParseNumber = (value: any): number => {
+    if (typeof value === 'number') return value;
+    if (!value || typeof value !== 'string') return 0;
+    
+    // Remove any non-numeric characters except decimal point and minus
+    const cleaned = value.replace(/[^\d.-]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const getUserBalance = (): number => {
+    return safeParseNumber(portfolioSummaryResponse?.data?.cashBalance);
+  };
+
   const getCompanyLogoClass = (symbol: string) => {
     const symbolLower = symbol.toLowerCase();
     if (symbolLower === 'tcs') return 'company-logo tcs';
@@ -164,12 +197,39 @@ export default function Trading() {
     }
 
     const quantityNum = parseInt(quantity);
-    const priceNum = parseFloat(price);
 
-    if (quantityNum <= 0 || priceNum <= 0) {
+    if (quantityNum <= 0) {
       toast({
         title: 'Error',
-        description: 'Invalid quantity or price',
+        description: 'Invalid quantity',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Get selected company and calculate total cost
+    const selectedCompany = companies.find(
+      (company) => company.id === selectedCompanyId
+    );
+    
+    if (!selectedCompany) {
+      toast({
+        title: 'Error',
+        description: 'Selected company not found',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const pricePerToken = parseFloat(selectedCompany.currentPrice);
+    const totalCost = quantityNum * pricePerToken;
+    const userBalance = getUserBalance();
+
+    // Check balance for buy orders
+    if (orderType === 'buy' && totalCost > userBalance) {
+      toast({
+        title: 'Insufficient Balance',
+        description: `You need ${formatCurrency(totalCost)} but your balance is ${formatCurrency(userBalance)}`,
         variant: 'destructive',
       });
       return;
@@ -179,9 +239,7 @@ export default function Trading() {
       companyId: selectedCompanyId,
       quantity: quantityNum,
       orderType: orderType,
-      pricePerToken: companies.find(
-        (company) => company.id === selectedCompanyId
-      )?.currentPrice,
+      pricePerToken: selectedCompany.currentPrice,
     });
   };
 
@@ -224,6 +282,18 @@ export default function Trading() {
                       </TabsTrigger>
                     </TabsList>
                   </Tabs>
+
+                  {/* Balance Display */}
+                  {!balanceLoading && (
+                    <div className='bg-blue-50 p-3 rounded-lg'>
+                      <div className='flex justify-between items-center'>
+                        <span className='text-sm text-gray-600'>Available Balance</span>
+                        <span className='text-lg font-semibold text-blue-600'>
+                          {formatCurrency(getUserBalance())}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <Label htmlFor='company'>Select Company</Label>
@@ -270,12 +340,73 @@ export default function Trading() {
                     />
                   </div>
 
+                  {/* Cost Preview for Buy Orders */}
+                  {orderType === 'buy' && selectedCompanyId && quantity && (
+                    (() => {
+                      const selectedCompany = companies.find(
+                        (company) => company.id === selectedCompanyId
+                      );
+                      if (!selectedCompany) return null;
+                      
+                      const quantityNum = parseInt(quantity);
+                      const pricePerToken = parseFloat(selectedCompany.currentPrice);
+                      const totalCost = quantityNum * pricePerToken;
+                      const userBalance = getUserBalance();
+                      const hasInsufficientBalance = totalCost > userBalance;
+                      
+                      return (
+                        <div className={`p-3 rounded-lg ${
+                          hasInsufficientBalance ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'
+                        }`}>
+                          <div className='text-sm space-y-1'>
+                            <div className='flex justify-between'>
+                              <span className='text-gray-600'>Price per token:</span>
+                              <span className='font-medium'>{formatCurrency(pricePerToken)}</span>
+                            </div>
+                            <div className='flex justify-between'>
+                              <span className='text-gray-600'>Total cost:</span>
+                              <span className={`font-semibold ${
+                                hasInsufficientBalance ? 'text-red-600' : 'text-green-600'
+                              }`}>
+                                {formatCurrency(totalCost)}
+                              </span>
+                            </div>
+                            {hasInsufficientBalance && (
+                              <div className='flex justify-between text-red-600 text-xs'>
+                                <span>Insufficient balance</span>
+                                <span>Need {formatCurrency(totalCost - userBalance)} more</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()
+                  )}
+
                   <Button
                     onClick={handlePlaceOrder}
                     className='w-full'
                     variant={orderType === 'buy' ? 'default' : 'destructive'}
+                    disabled={
+                      !selectedCompanyId || 
+                      !quantity || 
+                      orderMutation.isPending ||
+                      (orderType === 'buy' && (() => {
+                        const selectedCompany = companies.find(
+                          (company) => company.id === selectedCompanyId
+                        );
+                        if (!selectedCompany) return true;
+                        const quantityNum = parseInt(quantity);
+                        const pricePerToken = parseFloat(selectedCompany.currentPrice);
+                        const totalCost = quantityNum * pricePerToken;
+                        const userBalance = getUserBalance();
+                        return totalCost > userBalance;
+                      })())
+                    }
                   >
-                    Place {orderType.toUpperCase()} Order
+                    {orderMutation.isPending
+                      ? 'Placing Order...'
+                      : `Place ${orderType.toUpperCase()} Order`}
                   </Button>
                 </CardContent>
               </Card>

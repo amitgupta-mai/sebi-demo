@@ -56,6 +56,18 @@ export default function Tokenize() {
   const holdings = holdingsResponse?.data?.shares || [];
   const companies = companiesResponse?.data?.companies || [];
 
+  // Filter companies to only show those where user has shares
+  const companiesWithShares = companies.filter((company: any) => {
+    const holding = holdings.find((h: any) => h.companyId === company.id);
+    return holding && holding.quantity > 0;
+  });
+
+  // Get companies without shares for display purposes
+  const companiesWithoutShares = companies.filter((company: any) => {
+    const holding = holdings.find((h: any) => h.companyId === company.id);
+    return !holding || holding.quantity === 0;
+  });
+
   const tokenizeMutation = useMutation({
     mutationFn: async (data: {
       companyId: string;
@@ -181,6 +193,36 @@ export default function Tokenize() {
               </p>
             </div>
 
+            {/* Holdings Summary */}
+            {!holdingsLoading && !companiesLoading && (
+              <div className='mb-6'>
+                <Card>
+                  <CardContent className='p-4'>
+                    <div className='flex items-center justify-between'>
+                      <div>
+                        <p className='text-sm text-gray-600'>Companies with shares</p>
+                        <p className='text-2xl font-bold text-gray-900'>
+                          {companiesWithShares.length}
+                        </p>
+                      </div>
+                      <div>
+                        <p className='text-sm text-gray-600'>Total shares</p>
+                        <p className='text-2xl font-bold text-green-600'>
+                          {holdings.reduce((sum, holding) => sum + (holding.quantity || 0), 0)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className='text-sm text-gray-600'>Available for tokenization</p>
+                        <p className='text-2xl font-bold text-blue-600'>
+                          {companiesWithShares.length > 0 ? 'Ready' : 'None'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle className='flex items-center'>
@@ -199,16 +241,51 @@ export default function Tokenize() {
                       <SelectValue placeholder='Choose a company to tokenize' />
                     </SelectTrigger>
                     <SelectContent>
-                      {companiesLoading ? (
+                      {companiesLoading || holdingsLoading ? (
                         <SelectItem value='loading' disabled>
                           <DataLoading text='Loading companies...' />
                         </SelectItem>
                       ) : companies && companies.length > 0 ? (
-                        companies.map((company: any) => (
-                          <SelectItem key={company.id} value={company.id}>
-                            {company.name} ({company.symbol})
-                          </SelectItem>
-                        ))
+                        <>
+                          {/* Companies with shares - clickable */}
+                          {companiesWithShares.length > 0 && (
+                            <>
+                              <div className='px-2 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide'>
+                                Companies with shares
+                              </div>
+                              {companiesWithShares.map((company: any) => {
+                                const holding = holdings.find((h: any) => h.companyId === company.id);
+                                return (
+                                  <SelectItem key={company.id} value={company.id}>
+                                    <div className='flex items-center justify-between w-full'>
+                                      <span>{company.name} ({company.symbol})</span>
+                                      <span className='text-xs text-green-600 font-medium'>
+                                        {holding?.quantity || 0} shares
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })}
+                            </>
+                          )}
+                          
+                          {/* Companies without shares - disabled */}
+                          {companiesWithoutShares.length > 0 && (
+                            <>
+                              <div className='px-2 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide'>
+                                Other companies
+                              </div>
+                              {companiesWithoutShares.map((company: any) => (
+                                <SelectItem key={company.id} value={company.id} disabled>
+                                  <div className='flex items-center justify-between w-full opacity-50'>
+                                    <span>{company.name} ({company.symbol})</span>
+                                    <span className='text-xs text-gray-400'>No shares</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </>
+                          )}
+                        </>
                       ) : (
                         <SelectItem value='no-companies' disabled>
                           No companies available
