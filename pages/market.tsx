@@ -80,14 +80,33 @@ export default function Market() {
     queryKey: ['/api/tokens/available'],
   });
 
+  const {
+    data: availableMarketTokensResponse,
+    isLoading: marketTokensLoading,
+  } = useQuery<{
+    success: boolean;
+    message: string;
+    data: {
+      orders: any[];
+    };
+  }>({
+    queryKey: ['/api/transactions/available-tokens'],
+  });
+
   // Extract companies from the API response
   const companies = companiesResponse?.data?.companies || [];
+
+  // Extract available tokens from API response based on selected tab
+  const availableTokens =
+    orderType === 'buy'
+      ? availableMarketTokensResponse?.data?.orders || []
+      : tokenizedSharesResponse?.data?.tokens || [];
 
   // Extract tokenized shares from API response
   const tokenizedShares = tokenizedSharesResponse?.data?.tokens || [];
 
   // Extract unique companies from available tokens for trading
-  const availableCompanies = tokenizedShares.reduce(
+  const availableCompanies = availableTokens.reduce(
     (unique: any[], token: any) => {
       const company = token.company;
       if (company && !unique.find((c) => c.id === company.id)) {
@@ -103,10 +122,29 @@ export default function Market() {
     []
   );
 
+  const { data: portfolioSummaryResponse, isLoading: balanceLoading } =
+    useQuery<{
+      success: boolean;
+      message: string;
+      data: {
+        totalPortfolioValue: string;
+        totalSharesValue: number;
+        totalTokensValue: number;
+        cashBalance: string;
+        totalProfitLoss: number;
+        totalSharesProfitLoss: number;
+        totalTokensProfitLoss: number;
+        totalHoldings: number;
+        sharesCount: number;
+        tokensCount: number;
+      };
+    }>({
+      queryKey: ['/api/portfolio/overview'],
+    });
+
   const createOrderMutation = useMutation({
     mutationFn: async (data: {
       companyId: string;
-      tokenId: string;
       orderType: 'buy' | 'sell';
       quantity: number;
       price: string;
@@ -116,9 +154,9 @@ export default function Market() {
       const endpoint =
         data.orderType === 'buy' ? '/api/tokens/buy' : '/api/tokens/sell';
       return await apiRequest('POST', `${baseUrl}${endpoint}`, {
-        tokenId: data.tokenId,
         companyId: data.companyId,
         quantity: data.quantity,
+        price: data.price,
       });
     },
     onSuccess: (data, variables) => {
@@ -128,7 +166,7 @@ export default function Market() {
       const action = orderType === 'buy' ? 'bought' : 'sold';
       toast({
         title: 'Success',
-        description: `${action} ${quantity} tokens for user ${userName}`,
+        description: `${userName} ${action} ${quantity} tokens successfully!`,
       });
       setSelectedCompanyId('');
       setQuantity('');
@@ -141,11 +179,19 @@ export default function Market() {
 
       // Invalidate transactions/available-tokens query if it's a sell order
       if (variables.orderType === 'sell') {
-        queryClient.invalidateQueries({ queryKey: ['/api/transactions/available-tokens'] });
+        queryClient.invalidateQueries({
+          queryKey: ['/api/transactions/available-tokens'],
+        });
       }
 
       // Invalidate portfolio overview to refresh balance
       queryClient.invalidateQueries({ queryKey: ['/api/portfolio/overview'] });
+
+      // Invalidate wallet to refresh balance
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
+
+      // Invalidate wallet history
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet-history'] });
     },
     onError: (error: any) => {
       toast({
@@ -195,6 +241,31 @@ export default function Market() {
     if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
 
     return num.toFixed(1);
+  };
+
+  const safeParseNumber = (value: any): number => {
+    if (typeof value === 'number') return value;
+    if (!value || typeof value !== 'string') return 0;
+
+    // Remove any non-numeric characters except decimal point and minus
+    const cleaned = value.replace(/[^\d.-]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const getUserBalance = (): number => {
+    return safeParseNumber(portfolioSummaryResponse?.data?.cashBalance);
+  };
+
+  const getAvailableQuantity = (companyId: string): number => {
+    const tokens = tokenizedShares.filter(
+      (t: any) => t.companyId === companyId
+    );
+    return tokens.reduce(
+      (total: number, token: any) =>
+        total + (token.remainingQuantity || token.quantity || 0),
+      0
+    );
   };
 
   const getPriceChangeClass = (change: number) => {
@@ -258,31 +329,54 @@ export default function Market() {
       return;
     }
 
-    // For sell orders, check if user has enough tokens
-    let tokenizedShare: any = null;
+    // Check if quantity exceeds available tokens for sell orders
     if (orderType === 'sell') {
-      tokenizedShare = tokenizedShares?.find(
-        (ts: any) => ts.companyId === selectedCompanyId
-      );
-      if (!tokenizedShare || tokenizedShare.quantity < quantityNum) {
+      const availableQuantity = getAvailableQuantity(selectedCompanyId);
+      if (quantityNum > availableQuantity) {
         toast({
-          title: 'Error',
-          description: 'Insufficient tokens to sell',
+          title: 'Insufficient Tokens',
+          description: `You requested ${quantityNum} tokens but only ${availableQuantity} are available`,
           variant: 'destructive',
         });
         return;
       }
     }
 
+    // Get selected company and calculate total cost
+    const selectedCompany = availableCompanies.find(
+      (company: any) => company.id === selectedCompanyId
+    );
+
+    if (!selectedCompany) {
+      toast({
+        title: 'Error',
+        description: 'Selected company not found',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const pricePerToken = parseFloat(selectedCompany.currentPrice);
+    const totalCost = quantityNum * pricePerToken;
+    const userBalance = getUserBalance();
+
+    // Check balance for buy orders
+    if (orderType === 'buy' && totalCost > userBalance) {
+      toast({
+        title: 'Insufficient Balance',
+        description: `You need ${formatCurrency(
+          totalCost
+        )} but your balance is ${formatCurrency(userBalance)}`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     createOrderMutation.mutate({
       companyId: selectedCompanyId,
-      tokenId: tokenizedShare?.id || '',
       orderType,
       quantity: quantityNum,
-      price:
-        availableCompanies.find(
-          (company: any) => company.id === selectedCompanyId
-        )?.currentPrice || '0',
+      price: selectedCompany.currentPrice,
     });
   };
 
@@ -632,6 +726,20 @@ export default function Market() {
                     </TabsList>
                   </Tabs>
 
+                  {/* Balance Display */}
+                  {!balanceLoading && (
+                    <div className='bg-blue-50 p-3 rounded-lg'>
+                      <div className='flex justify-between items-center'>
+                        <span className='text-sm text-gray-600'>
+                          Available Balance
+                        </span>
+                        <span className='text-lg font-semibold text-blue-600'>
+                          {formatCurrency(getUserBalance())}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <Label htmlFor='company'>Select Company</Label>
                     <Select
@@ -642,20 +750,31 @@ export default function Market() {
                         <SelectValue placeholder='Choose a company' />
                       </SelectTrigger>
                       <SelectContent>
-                        {tokensLoading || companiesLoading ? (
+                        {tokensLoading ||
+                        marketTokensLoading ||
+                        companiesLoading ? (
                           <SelectItem value='loading' disabled>
                             <DataLoading text='Loading companies...' />
                           </SelectItem>
                         ) : availableCompanies &&
                           availableCompanies.length > 0 ? (
-                          availableCompanies.map((company: any) => (
-                            <SelectItem key={company?.id} value={company?.id}>
-                              {company?.name} ({company?.symbol}) -{' '}
-                              {formatCurrency(
-                                parseFloat(company?.currentPrice)
-                              )}
-                            </SelectItem>
-                          ))
+                          availableCompanies.map((company: any) => {
+                            const availableQuantity = getAvailableQuantity(
+                              company.id
+                            );
+                            return (
+                              <SelectItem key={company?.id} value={company?.id}>
+                                <div className='flex items-center justify-between w-full'>
+                                  <span>
+                                    {company?.name} ({company?.symbol})
+                                  </span>
+                                  <span className='text-xs text-green-600 font-medium'>
+                                    {availableQuantity} available
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            );
+                          })
                         ) : (
                           <SelectItem value='no-companies' disabled>
                             No companies available
@@ -673,14 +792,168 @@ export default function Market() {
                       placeholder='Enter quantity'
                       value={quantity}
                       onChange={(e) => setQuantity(e.target.value)}
+                      max={
+                        selectedCompanyId
+                          ? getAvailableQuantity(selectedCompanyId)
+                          : undefined
+                      }
+                      min='1'
+                      className={
+                        selectedCompanyId &&
+                        quantity &&
+                        (() => {
+                          const quantityNum = parseInt(quantity);
+                          const availableQuantity =
+                            getAvailableQuantity(selectedCompanyId);
+                          return (
+                            isNaN(quantityNum) ||
+                            quantityNum < 1 ||
+                            quantityNum > availableQuantity
+                          );
+                        })()
+                          ? 'border-red-500 focus:border-red-500'
+                          : ''
+                      }
                     />
+                    {selectedCompanyId && (
+                      <div className='text-xs mt-1'>
+                        <p className='text-gray-500'>
+                          Maximum available:{' '}
+                          {getAvailableQuantity(selectedCompanyId)} tokens
+                        </p>
+                        {quantity &&
+                          (() => {
+                            const quantityNum = parseInt(quantity);
+                            const availableQuantity =
+                              getAvailableQuantity(selectedCompanyId);
+
+                            if (isNaN(quantityNum) || quantityNum < 1) {
+                              return (
+                                <div className='text-red-600 mt-1'>
+                                  <p className='font-medium'>
+                                    ⚠️ Invalid quantity
+                                  </p>
+                                  <p className='text-xs'>
+                                    Please enter a valid number greater than 0
+                                  </p>
+                                </div>
+                              );
+                            }
+
+                            if (quantityNum > availableQuantity) {
+                              return (
+                                <div className='text-red-600 mt-1'>
+                                  <p className='font-medium'>
+                                    ⚠️ Quantity exceeds available tokens
+                                  </p>
+                                  <p className='text-xs'>
+                                    You requested {quantityNum} but only{' '}
+                                    {availableQuantity} are available
+                                  </p>
+                                </div>
+                              );
+                            }
+
+                            return null;
+                          })()}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Cost Preview for Buy Orders */}
+                  {orderType === 'buy' &&
+                    selectedCompanyId &&
+                    quantity &&
+                    (() => {
+                      const selectedCompany = availableCompanies.find(
+                        (company: any) => company.id === selectedCompanyId
+                      );
+                      if (!selectedCompany) return null;
+
+                      const quantityNum = parseInt(quantity);
+                      const pricePerToken = parseFloat(
+                        selectedCompany.currentPrice
+                      );
+                      const totalCost = quantityNum * pricePerToken;
+                      const userBalance = getUserBalance();
+                      const hasInsufficientBalance = totalCost > userBalance;
+
+                      return (
+                        <div
+                          className={`p-3 rounded-lg ${
+                            hasInsufficientBalance
+                              ? 'bg-red-50 border border-red-200'
+                              : 'bg-green-50 border border-green-200'
+                          }`}
+                        >
+                          <div className='text-sm space-y-1'>
+                            <div className='flex justify-between'>
+                              <span className='text-gray-600'>
+                                Price per token:
+                              </span>
+                              <span className='font-medium'>
+                                {formatCurrency(pricePerToken)}
+                              </span>
+                            </div>
+                            <div className='flex justify-between'>
+                              <span className='text-gray-600'>Total cost:</span>
+                              <span
+                                className={`font-semibold ${
+                                  hasInsufficientBalance
+                                    ? 'text-red-600'
+                                    : 'text-green-600'
+                                }`}
+                              >
+                                {formatCurrency(totalCost)}
+                              </span>
+                            </div>
+                            {hasInsufficientBalance && (
+                              <div className='flex justify-between text-red-600 text-xs'>
+                                <span>Insufficient balance</span>
+                                <span>
+                                  Need {formatCurrency(totalCost - userBalance)}{' '}
+                                  more
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                   <Button
                     onClick={handlePlaceOrder}
-                    disabled={createOrderMutation.isPending}
                     className='w-full'
                     variant={orderType === 'buy' ? 'default' : 'destructive'}
+                    disabled={
+                      !selectedCompanyId ||
+                      !quantity ||
+                      createOrderMutation.isPending ||
+                      (() => {
+                        const quantityNum = parseInt(quantity);
+                        const availableQuantity =
+                          getAvailableQuantity(selectedCompanyId);
+
+                        // Check if quantity exceeds available tokens
+                        if (quantityNum > availableQuantity) return true;
+
+                        // Check balance for buy orders
+                        if (orderType === 'buy') {
+                          const selectedCompany = availableCompanies.find(
+                            (company: any) => company.id === selectedCompanyId
+                          );
+                          if (!selectedCompany) return true;
+                          const pricePerToken = parseFloat(
+                            selectedCompany.currentPrice
+                          );
+                          const totalCost = quantityNum * pricePerToken;
+                          const userBalance = getUserBalance();
+                          return totalCost > userBalance;
+                        }
+
+                        return false;
+                      })()
+                    }
                   >
                     {createOrderMutation.isPending
                       ? 'Placing Order...'
