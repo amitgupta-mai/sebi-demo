@@ -17,14 +17,14 @@ import Portfolio from './pages/portfolio';
 import Transactions from './pages/transactions';
 import Login from './pages/login';
 import Signup from './pages/signup';
-import Landing from './pages/landing';
 import NotFound from './pages/not-found';
+import RootRedirect from './components/RootRedirect';
 
 function Router() {
   return (
     <Switch>
       {/* Public routes */}
-      <Route path='/' component={Landing} />
+      <Route path='/' component={RootRedirect} />
       <Route path='/login' component={Login} />
       <Route path='/signup' component={Signup} />
 
