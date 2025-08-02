@@ -42,9 +42,7 @@ const wallet = {
   balance: 10000.0,
   totalAdded: 15000.0,
   totalWithdrawn: 5000.0,
-  cbdcBalance: 0.0,
-  cbdcConnected: false,
-  cbdcWalletAddress: null,
+
   totalBalance: 10000.0,
   // ✅ Address removed from wallet object
 };
@@ -107,7 +105,6 @@ const WalletComponent = ({ wallet, user }) => (
     <h3>Wallet Balance</h3>
     <p>Total Balance: ₹{wallet.totalBalance}</p>
     <p>Regular Balance: ₹{wallet.balance}</p>
-    <p>CBDC Balance: ₹{wallet.cbdcBalance}</p>
 
     {/* Show wallet address from user profile */}
     <p>Wallet Address: {user.walletAddress}</p>

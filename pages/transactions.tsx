@@ -306,7 +306,8 @@ export default function Transactions() {
                         <div>
                           <p className='text-gray-500'>Quantity</p>
                           <p className='font-medium'>
-                            {transaction.transactionType === 'tokenization'
+                            {transaction.transactionType === 'tokenization' ||
+                            transaction.transactionType === 'sell'
                               ? `${
                                   transaction.metadata?.tokenQuantity ||
                                   transaction.quantity
@@ -340,7 +341,11 @@ export default function Transactions() {
                                   : 'destructive'
                               }
                             >
-                              {transaction.status.toUpperCase()}
+                              {transaction.status === 'complete' &&
+                              transaction.metadata?.blockchainActivity ===
+                                'HOLD'
+                                ? 'PENDING'
+                                : transaction.status.toUpperCase()}
                             </Badge>
                             {transaction.metadata?.blockchainMinted && (
                               <Badge variant='outline' className='text-xs'>

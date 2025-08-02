@@ -46,10 +46,10 @@ export default function Trading() {
     success: boolean;
     message: string;
     data: {
-      transactions: any[];
+      orders: any[];
     };
   }>({
-    queryKey: ['/api/transactions/sell'],
+    queryKey: ['/api/transactions/available-tokens'],
   });
 
   const { data: companiesResponse, isLoading: companiesLoading } = useQuery<{
@@ -91,7 +91,7 @@ export default function Trading() {
   // Extract available tokens from API response based on selected tab
   const availableTokens =
     orderType === 'buy'
-      ? availableMarketTokensResponse?.data?.transactions || []
+      ? availableMarketTokensResponse?.data?.orders || []
       : availableTokensResponse?.data?.tokens || [];
   const allCompanies = companiesResponse?.data?.companies || [];
 
@@ -141,9 +141,11 @@ export default function Trading() {
       // Invalidate orders query
       queryClient.invalidateQueries({ queryKey: ['/api/tokens/orders'] });
 
-      // Invalidate transactions/sell query if it's a sell order
+      // Invalidate transactions/available-tokens query if it's a sell order
       if (variables.orderType === 'sell') {
-        queryClient.invalidateQueries({ queryKey: ['/api/transactions/sell'] });
+        queryClient.invalidateQueries({
+          queryKey: ['/api/transactions/available-tokens'],
+        });
       }
 
       // Invalidate available tokens query to refresh available quantities
@@ -192,7 +194,11 @@ export default function Trading() {
     const tokens = availableTokens.filter(
       (t: any) => t.companyId === companyId
     );
-    return tokens.reduce((total, token) => total + (token.quantity || 0), 0);
+    return tokens.reduce(
+      (total, token) =>
+        total + (token.remainingQuantity || token.quantity || 0),
+      0
+    );
   };
 
   const getCompanyTokens = (companyId: string): any[] => {

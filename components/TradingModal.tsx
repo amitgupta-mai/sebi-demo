@@ -63,9 +63,9 @@ export default function TradingModal({
       // Invalidate orders query
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
 
-      // Invalidate transactions/sell query if it's a sell order
+      // Invalidate transactions/available-tokens query if it's a sell order
       if (variables.orderType === 'sell') {
-        queryClient.invalidateQueries({ queryKey: ['/api/transactions/sell'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/transactions/available-tokens'] });
       }
 
       // Invalidate available tokens query to refresh available quantities

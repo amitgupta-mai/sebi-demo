@@ -142,8 +142,6 @@ export const mockWallet = {
   id: '1',
   userId: 'user-' + Date.now(),
   balance: '50000.00',
-  cbdcWalletId: null,
-  cbdcBalance: '0.00',
   createdAt: '2025-01-01T00:00:00.000Z',
   updatedAt: '2025-07-30T12:00:00.000Z',
 };
