@@ -124,8 +124,7 @@ export default function Landing() {
             </CardHeader>
             <CardContent>
               <p className='text-gray-600'>
-                Convert tokens back to physical shares anytime with minimal fees
-                and instant processing.
+                Convert tokens back to physical shares anytime with instant processing.
               </p>
             </CardContent>
           </Card>

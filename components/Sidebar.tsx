@@ -15,12 +15,12 @@ import {
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-  { name: 'Market', href: '/market', icon: TrendingUp },
+  // { name: 'Market', href: '/market', icon: TrendingUp },
   { name: 'Wallet', href: '/wallet', icon: Wallet },
   { name: 'Tokenize Shares', href: '/tokenize', icon: Coins },
   { name: 'Token Trading', href: '/trading', icon: ArrowRightLeft },
   { name: 'Convert to Shares', href: '/convert', icon: Undo2 },
-  { name: 'Portfolio', href: '/portfolio', icon: Briefcase },
+  // { name: 'Portfolio', href: '/portfolio', icon: Briefcase },
   { name: 'Transaction History', href: '/transactions', icon: History },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];

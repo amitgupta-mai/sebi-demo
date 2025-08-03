@@ -86,9 +86,15 @@ export default function Tokenize() {
       setSelectedCompanyId('');
       setQuantity('');
       setSelectedHolding(null);
-      queryClient.invalidateQueries({ queryKey: ['/api/portfolio/holdings'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/tokens/available'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/portfolio/overview'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/portfolio/holdings'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/tokens/available'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/portfolio/overview'],
+      });
     },
     onError: (error: any) => {
       toast({
@@ -166,10 +172,9 @@ export default function Tokenize() {
 
     const quantityNum = parseInt(quantity);
     const sharePrice = parseFloat(selectedHolding.company.currentPrice);
-    const fee = 50;
-    const total = sharePrice * quantityNum + fee;
+    const total = sharePrice * quantityNum;
 
-    return { sharePrice, fee, total };
+    return { sharePrice, total };
   };
 
   const costs = calculateTokenizationCost();
@@ -423,13 +428,14 @@ export default function Tokenize() {
                         <span>Quantity:</span>
                         <span>{quantity} shares</span>
                       </div>
-                      <div className='flex justify-between'>
-                        <span>Tokenization Fee:</span>
-                        <span>{formatCurrency(costs.fee)}</span>
+
+                      <div className='flex justify-between text-gray-600 space-y-1'>
+                        <span>Token Quantity:</span>
+                        <span>{parseInt(quantity) * 10} tokens</span>
                       </div>
-                      <div className='flex justify-between font-semibold text-gray-900 pt-2 border-t border-green-200'>
-                        <span>Total Cost:</span>
-                        <span>{formatCurrency(costs.total)}</span>
+                      <div className='flex justify-between text-gray-600 space-y-1'>
+                        <span>Price per token:</span>
+                        <span>{formatCurrency(costs.sharePrice / 10)}</span>
                       </div>
                     </div>
                   </div>
@@ -451,9 +457,6 @@ export default function Tokenize() {
                           anytime
                         </li>
                         <li>• Tokenization is irreversible once confirmed</li>
-                        <li>
-                          • A small fee applies for the tokenization process
-                        </li>
                       </ul>
                     </div>
                   </div>

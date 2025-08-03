@@ -95,10 +95,9 @@ export default function ConvertModal({ isOpen, onClose, tokenizedShare }: Conver
 
     const quantityNum = parseInt(quantity);
     const sharePrice = parseFloat(tokenizedShare.company.currentPrice);
-    const fee = 25;
-    const totalValue = (sharePrice * quantityNum) - fee;
+    const totalValue = sharePrice * quantityNum;
 
-    return { sharePrice, fee, totalValue: Math.max(0, totalValue) };
+    return { sharePrice, totalValue };
   };
 
   const conversion = calculateConversion();
@@ -164,10 +163,7 @@ export default function ConvertModal({ isOpen, onClose, tokenizedShare }: Conver
                   <span>Quantity:</span>
                   <span>{quantity} tokens → {quantity} shares</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Conversion Fee:</span>
-                  <span>{formatCurrency(conversion.fee)}</span>
-                </div>
+
                 <div className="flex justify-between font-semibold text-gray-900 pt-2 border-t border-green-200">
                   <span>Net Value:</span>
                   <span>{formatCurrency(conversion.totalValue)}</span>

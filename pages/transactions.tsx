@@ -323,12 +323,7 @@ export default function Transactions() {
                             )}
                           </p>
                         </div>
-                        <div>
-                          <p className='text-gray-500'>Fees</p>
-                          <p className='font-medium'>
-                            {formatCurrency(parseFloat(transaction.fees))}
-                          </p>
-                        </div>
+
                         <div>
                           <p className='text-gray-500'>Status</p>
                           <div className='space-y-1'>
@@ -361,11 +356,7 @@ export default function Transactions() {
                           <p className='text-sm text-gray-600'>
                             {transaction.description}
                           </p>
-                          {transaction.metadata?.tokenId && (
-                            <p className='text-xs text-gray-500 mt-1'>
-                              Token ID: {transaction.metadata.tokenId}
-                            </p>
-                          )}
+
                           {transaction.metadata?.blockchainResponse
                             ?.contractAddress && (
                             <p className='text-xs text-gray-500'>

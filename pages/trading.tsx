@@ -167,8 +167,8 @@ export default function Trading() {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -262,7 +262,7 @@ export default function Trading() {
     }
 
     const pricePerToken = parseFloat(selectedCompany.currentPrice);
-    const totalCost = quantityNum * pricePerToken;
+    const totalCost = (quantityNum * pricePerToken) / 10;
     const userBalance = getUserBalance();
 
     // Check balance for buy orders
@@ -484,7 +484,7 @@ export default function Trading() {
                       const pricePerToken = parseFloat(
                         selectedCompany.currentPrice
                       );
-                      const totalCost = quantityNum * pricePerToken;
+                      const totalCost = (quantityNum * pricePerToken) / 10;
                       const userBalance = getUserBalance();
                       const hasInsufficientBalance = totalCost > userBalance;
 
@@ -502,7 +502,7 @@ export default function Trading() {
                                 Price per token:
                               </span>
                               <span className='font-medium'>
-                                {formatCurrency(pricePerToken)}
+                                {formatCurrency(pricePerToken / 10)}
                               </span>
                             </div>
                             <div className='flex justify-between'>

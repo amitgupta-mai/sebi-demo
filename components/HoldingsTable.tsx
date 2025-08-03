@@ -167,7 +167,6 @@ export default function HoldingsTable({
                     <th>Quantity</th>
                     <th>Price</th>
                     <th>Value</th>
-                    <th>P&L</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -233,24 +232,7 @@ export default function HoldingsTable({
                       <td className='text-sm text-gray-900'>
                         {formatCurrency(item.currentValue)}
                       </td>
-                      <td>
-                        <div
-                          className={`text-sm flex items-center ${
-                            item.pnl >= 0 ? 'text-green-600' : 'text-red-600'
-                          }`}
-                        >
-                          {item.pnl >= 0 ? (
-                            <TrendingUp className='w-3 h-3 mr-1' />
-                          ) : (
-                            <TrendingDown className='w-3 h-3 mr-1' />
-                          )}
-                          <span>
-                            {item.pnl >= 0 ? '+' : ''}
-                            {formatCurrency(item.pnl)} (
-                            {item.pnlPercentage.toFixed(1)}%)
-                          </span>
-                        </div>
-                      </td>
+
                       <td>
                         <div className='flex space-x-2'>
                           {item.type === 'share' ? (
@@ -262,13 +244,6 @@ export default function HoldingsTable({
                                 className='text-primary hover:text-blue-700 p-0 h-auto font-medium'
                               >
                                 Tokenize
-                              </Button>
-                              <Button
-                                variant='link'
-                                size='sm'
-                                className='text-red-600 hover:text-red-700 p-0 h-auto font-medium'
-                              >
-                                Sell
                               </Button>
                             </>
                           ) : (

@@ -242,57 +242,6 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8'>
-            {/* Portfolio Chart */}
-            <div className='lg:col-span-2'>
-              <PortfolioChart />
-            </div>
-
-            {/* Quick Actions */}
-            <Card>
-              <CardContent className='p-6'>
-                <h3 className='text-lg font-semibold text-gray-900 mb-6'>
-                  Quick Actions
-                </h3>
-                <div className='space-y-4'>
-                  <Button
-                    asChild
-                    className='w-full bg-primary hover:bg-blue-700'
-                  >
-                    <Link href='/tokenize'>
-                      <Coins className='mr-2 h-4 w-4' />
-                      Tokenize Shares
-                    </Link>
-                  </Button>
-
-                  <Button
-                    asChild
-                    className='w-full bg-secondary hover:bg-green-700'
-                  >
-                    <Link href='/trading'>
-                      <ArrowRightLeft className='mr-2 h-4 w-4' />
-                      Trade Tokens
-                    </Link>
-                  </Button>
-
-                  <Button asChild className='w-full btn-convert'>
-                    <Link href='/convert'>
-                      <Tag className='mr-2 h-4 w-4' />
-                      Convert to Shares
-                    </Link>
-                  </Button>
-
-                  <Button asChild variant='outline' className='w-full'>
-                    <Link href='/portfolio'>
-                      <TrendingUp className='mr-2 h-4 w-4' />
-                      View Full Portfolio
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
           {/* Holdings Table */}
           <HoldingsTable
             holdings={allHoldings}
@@ -382,90 +331,45 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Market Overview */}
             <Card>
               <CardContent className='p-6'>
                 <h3 className='text-lg font-semibold text-gray-900 mb-6'>
-                  NSE Market Overview
+                  Quick Actions
                 </h3>
                 <div className='space-y-4'>
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center space-x-3'>
-                      <div className={getCompanyLogoClass('TCS')}>
-                        <span>TCS</span>
-                      </div>
-                      <div>
-                        <p className='text-sm font-medium text-gray-900'>TCS</p>
-                        <p className='text-xs text-gray-500'>
-                          Tata Consultancy
-                        </p>
-                      </div>
-                    </div>
-                    <div className='text-right'>
-                      <p className='text-sm font-medium text-gray-900'>
-                        ₹3,456.80
-                      </p>
-                      <p className='text-xs text-secondary'>+2.5%</p>
-                    </div>
-                  </div>
+                  <Button
+                    asChild
+                    className='w-full bg-primary hover:bg-blue-700'
+                  >
+                    <Link href='/tokenize'>
+                      <Coins className='mr-2 h-4 w-4' />
+                      Tokenize Shares
+                    </Link>
+                  </Button>
 
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center space-x-3'>
-                      <div className={getCompanyLogoClass('RELIANCE')}>
-                        <span>REL</span>
-                      </div>
-                      <div>
-                        <p className='text-sm font-medium text-gray-900'>
-                          RELIANCE
-                        </p>
-                        <p className='text-xs text-gray-500'>
-                          Reliance Industries
-                        </p>
-                      </div>
-                    </div>
-                    <div className='text-right'>
-                      <p className='text-sm font-medium text-gray-900'>
-                        ₹2,845.30
-                      </p>
-                      <p className='text-xs text-destructive'>-1.2%</p>
-                    </div>
-                  </div>
+                  <Button
+                    asChild
+                    className='w-full bg-secondary hover:bg-green-700'
+                  >
+                    <Link href='/trading'>
+                      <ArrowRightLeft className='mr-2 h-4 w-4' />
+                      Trade Tokens
+                    </Link>
+                  </Button>
 
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center space-x-3'>
-                      <div className={getCompanyLogoClass('INFY')}>
-                        <span>INF</span>
-                      </div>
-                      <div>
-                        <p className='text-sm font-medium text-gray-900'>
-                          INFY
-                        </p>
-                        <p className='text-xs text-gray-500'>Infosys</p>
-                      </div>
-                    </div>
-                    <div className='text-right'>
-                      <p className='text-sm font-medium text-gray-900'>
-                        ₹1,678.90
-                      </p>
-                      <p className='text-xs text-secondary'>+3.8%</p>
-                    </div>
-                  </div>
+                  <Button asChild className='w-full btn-convert'>
+                    <Link href='/convert'>
+                      <Tag className='mr-2 h-4 w-4' />
+                      Convert to Shares
+                    </Link>
+                  </Button>
 
-                  <div className='mt-6 p-4 bg-blue-50 rounded-lg'>
-                    <div className='flex items-center justify-between mb-2'>
-                      <span className='text-sm font-medium text-gray-600'>
-                        NIFTY 50
-                      </span>
-                      <span className='text-sm font-bold text-gray-900'>
-                        21,456.30
-                      </span>
-                    </div>
-                    <div className='flex items-center text-secondary text-sm'>
-                      <TrendingUp className='w-4 h-4 mr-1' />
-                      <span>+142.50 (+0.67%)</span>
-                    </div>
-                  </div>
+                  <Button asChild variant='outline' className='w-full'>
+                    <Link href='/portfolio'>
+                      <TrendingUp className='mr-2 h-4 w-4' />
+                      View Full Portfolio
+                    </Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>

@@ -258,25 +258,6 @@ export default function Portfolio() {
                       {summaryLoading ? '...' : formatCurrency(totalValue)}
                     </p>
                   </div>
-                  <div>
-                    <p className='text-sm text-gray-500 mb-1'>Total P&L</p>
-                    <p
-                      className={`text-3xl font-bold ${
-                        totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}
-                    >
-                      {totalPnL >= 0 ? '+' : ''}
-                      {formatCurrency(totalPnL)}
-                    </p>
-                    <p
-                      className={`text-sm ${
-                        totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}
-                    >
-                      {totalPnL >= 0 ? '+' : ''}
-                      {totalPnLPercentage.toFixed(2)}%
-                    </p>
-                  </div>
                 </div>
 
                 <div className='space-y-4'>

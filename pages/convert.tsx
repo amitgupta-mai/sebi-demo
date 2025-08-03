@@ -159,10 +159,9 @@ export default function Convert() {
     const sharePrice = parseFloat(
       selectedTokenizedShare?.company?.currentPrice || '0'
     );
-    const fee = 25; // Conversion fee
-    const totalValue = sharePrice * quantityNum - fee;
+    const totalValue = sharePrice * quantityNum;
 
-    return { sharePrice, fee, totalValue: Math.max(0, totalValue) };
+    return { sharePrice, totalValue };
   };
 
   const conversion = calculateConversionValue();
@@ -265,7 +264,7 @@ export default function Convert() {
                         </span>
                       </div>
                       <div className='flex justify-between'>
-                        <span>Tokenization Price:</span>
+                        <span>Tokenization Fee:</span>
                         <span>
                           {formatCurrency(
                             parseFloat(
@@ -312,17 +311,15 @@ export default function Convert() {
                       <div className='flex justify-between'>
                         <span>Quantity:</span>
                         <span>
-                          {quantity} tokens → {quantity} shares
+                          {quantity} tokens → {parseInt(quantity) / 10}{' '}
+                          {parseInt(quantity) / 10 > 1 ? 'shares' : 'share'}
                         </span>
                       </div>
-                      <div className='flex justify-between'>
-                        <span>Conversion Fee:</span>
-                        <span>{formatCurrency(conversion?.fee || 0)}</span>
-                      </div>
+
                       <div className='flex justify-between font-semibold text-gray-900 pt-2 border-t border-green-200'>
                         <span>Net Value:</span>
                         <span>
-                          {formatCurrency(conversion?.totalValue || 0)}
+                          {formatCurrency(conversion?.totalValue / 10 || 0)}
                         </span>
                       </div>
                     </div>
@@ -341,12 +338,7 @@ export default function Convert() {
                           • Converted shares will be added to your demat account
                         </li>
                         <li>• Conversion process takes 1-2 business days</li>
-                        <li>
-                          • A small processing fee applies for conversions
-                        </li>
-                        <li>
-                          • You'll receive physical shares equivalent to tokens
-                        </li>
+
                         <li>• Conversion is irreversible once confirmed</li>
                       </ul>
                     </div>
@@ -367,19 +359,6 @@ export default function Convert() {
                       ? 'Processing...'
                       : 'Convert to Shares'}
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Conversion History */}
-            <Card className='mt-8'>
-              <CardHeader>
-                <CardTitle>Recent Conversions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className='text-center py-8 text-gray-500'>
-                  <Undo2 className='mx-auto h-12 w-12 text-gray-300 mb-4' />
-                  <p>Your conversion history will appear here</p>
                 </div>
               </CardContent>
             </Card>
