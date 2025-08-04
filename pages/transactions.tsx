@@ -370,12 +370,15 @@ export default function Transactions() {
                         </div>
                       )}
 
-                      {transaction.metadata?.transactionHash && (
+                      {(transaction.metadata?.transactionHash ||
+                        transaction?.metadata?.blockchainResponse?.txHash) && (
                         <div className='mt-4 flex items-center text-sm text-blue-600'>
                           <ExternalLink className='h-4 w-4 mr-1' />
                           <a
                             href={generateKalpScanUrl(
-                              transaction.metadata.transactionHash
+                              transaction.metadata?.transactionHash ||
+                                transaction?.metadata?.blockchainResponse
+                                  ?.txHash
                             )}
                             target='_blank'
                             rel='noopener noreferrer'

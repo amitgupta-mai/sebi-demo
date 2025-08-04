@@ -16,8 +16,8 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   TrendingUp,
   TrendingDown,
@@ -27,6 +27,7 @@ import {
   Coins,
   ArrowUpRight,
   ArrowDownRight,
+  Clock,
 } from 'lucide-react';
 import { DataLoading } from '@/components/LoadingSpinner';
 
@@ -37,8 +38,10 @@ export default function Market() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [orderType, setOrderType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState<string>('');
-  const [chartTimeframe, setChartTimeframe] = useState<string>('1D');
+  const [price, setPrice] = useState<string>('');
+  const [orderTypeSelect, setOrderTypeSelect] = useState<string>('limit');
 
+  // Fetch companies
   const { data: companiesResponse, isLoading: companiesLoading } = useQuery<{
     success: boolean;
     message: string;
@@ -50,104 +53,61 @@ export default function Market() {
     queryKey: ['/api/market/companies'],
   });
 
+  // Fetch market data for selected company
   const { data: marketDataResponse, isLoading: marketLoading } = useQuery<{
-    success: boolean;
-    message: string;
-    data: {
-      marketStats: {
-        totalCompanies: number;
-        totalMarketCap: string;
-        totalVolume: string;
-        gainers: number;
-        losers: number;
-      };
-      companies: any[];
-    };
-  }>({
-    queryKey: ['/api/market/overview'],
-  });
-
-  // Extract market data from API response
-  const marketData = marketDataResponse?.data;
-  const marketStats = marketData?.marketStats;
-  const allCompanies = marketData?.companies || [];
-
-  const { data: tokenizedSharesResponse, isLoading: tokensLoading } = useQuery<{
     success: boolean;
     message: string;
     data: any;
   }>({
-    queryKey: ['/api/tokens/available'],
+    queryKey: ['/api/market/company', selectedCompanyId],
+    enabled: !!selectedCompanyId,
   });
 
-  const {
-    data: availableMarketTokensResponse,
-    isLoading: marketTokensLoading,
-  } = useQuery<{
+  // Fetch order book for selected company
+  const { data: orderBookResponse, isLoading: orderBookLoading } = useQuery<{
     success: boolean;
     message: string;
     data: {
-      orders: any[];
+      buyOrders: any[];
+      sellOrders: any[];
+      currentPrice: string;
     };
   }>({
-    queryKey: ['/api/transactions/available-tokens'],
+    queryKey: ['/api/market/orderbook', selectedCompanyId],
+    enabled: !!selectedCompanyId,
   });
 
-  // Extract companies from the API response
-  const companies = companiesResponse?.data?.companies || [];
+  // Fetch market trades for selected company
+  const { data: marketTradesResponse, isLoading: tradesLoading } = useQuery<{
+    success: boolean;
+    message: string;
+    data: {
+      trades: any[];
+    };
+  }>({
+    queryKey: ['/api/market/trades', selectedCompanyId],
+    enabled: !!selectedCompanyId,
+  });
 
-  // Extract available tokens from API response based on selected tab
-  const availableTokens =
-    orderType === 'buy'
-      ? availableMarketTokensResponse?.data?.orders || []
-      : tokenizedSharesResponse?.data?.tokens || [];
+  // Fetch available tokens for user
+  const { data: availableTokensResponse, isLoading: tokensLoading } = useQuery<{
+    success: boolean;
+    message: string;
+    data: {
+      tokens: any[];
+    };
+  }>({
+    queryKey: ['/api/tokens/available'],
+  });
 
-  // Extract tokenized shares from API response
-  const tokenizedShares = tokenizedSharesResponse?.data?.tokens || [];
-
-  // Extract unique companies from available tokens for trading
-  const availableCompanies = availableTokens.reduce(
-    (unique: any[], token: any) => {
-      const company = token.company;
-      if (company && !unique.find((c) => c.id === company.id)) {
-        unique.push({
-          id: company.id || token.companyId,
-          name: company.name,
-          symbol: company.symbol,
-          currentPrice: token.currentPrice,
-        });
-      }
-      return unique;
-    },
-    []
-  );
-
-  const { data: portfolioSummaryResponse, isLoading: balanceLoading } =
-    useQuery<{
-      success: boolean;
-      message: string;
-      data: {
-        totalPortfolioValue: string;
-        totalSharesValue: number;
-        totalTokensValue: number;
-        cashBalance: string;
-        totalProfitLoss: number;
-        totalSharesProfitLoss: number;
-        totalTokensProfitLoss: number;
-        totalHoldings: number;
-        sharesCount: number;
-        tokensCount: number;
-      };
-    }>({
-      queryKey: ['/api/portfolio/overview'],
-    });
-
+  // Place order mutation
   const createOrderMutation = useMutation({
     mutationFn: async (data: {
       companyId: string;
       orderType: 'buy' | 'sell';
       quantity: number;
       price: string;
+      orderTypeSelect: string;
     }) => {
       const baseUrl =
         import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -157,6 +117,7 @@ export default function Market() {
         companyId: data.companyId,
         quantity: data.quantity,
         price: data.price,
+        orderType: data.orderTypeSelect,
       });
     },
     onSuccess: (data, variables) => {
@@ -168,30 +129,18 @@ export default function Market() {
         title: 'Success',
         description: `${userName} ${action} ${quantity} tokens successfully!`,
       });
-      setSelectedCompanyId('');
       setQuantity('');
+      setPrice('');
 
-      // Invalidate orders query
-      queryClient.invalidateQueries({ queryKey: ['/api/tokens/orders'] });
-
-      // Invalidate available tokens query
+      // Invalidate queries
+      queryClient.invalidateQueries({
+        queryKey: ['/api/market/orderbook', selectedCompanyId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/market/trades', selectedCompanyId],
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/tokens/available'] });
-
-      // Invalidate transactions/available-tokens query if it's a sell order
-      if (variables.orderType === 'sell') {
-        queryClient.invalidateQueries({
-          queryKey: ['/api/transactions/available-tokens'],
-        });
-      }
-
-      // Invalidate portfolio overview to refresh balance
       queryClient.invalidateQueries({ queryKey: ['/api/portfolio/overview'] });
-
-      // Invalidate wallet to refresh balance
-      queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
-
-      // Invalidate wallet history
-      queryClient.invalidateQueries({ queryKey: ['/api/wallet-history'] });
     },
     onError: (error: any) => {
       toast({
@@ -210,62 +159,15 @@ export default function Market() {
     }).format(amount);
   };
 
+  const formatNumber = (value: number) => {
+    return new Intl.NumberFormat('en-IN').format(value);
+  };
+
   const formatVolume = (volume: number) => {
     if (volume >= 10000000) return `${(volume / 10000000).toFixed(1)}Cr`;
     if (volume >= 100000) return `${(volume / 100000).toFixed(1)}L`;
     if (volume >= 1000) return `${(volume / 1000).toFixed(1)}K`;
     return volume.toString();
-  };
-
-  const formatLargeNumber = (value: string | number | undefined) => {
-    if (!value) return '0';
-
-    // Check if the value contains scientific notation
-    const valueStr = String(value);
-    if (valueStr.includes('e') || valueStr.includes('E')) {
-      return '0';
-    }
-
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-
-    // Check for invalid or extremely large numbers
-    if (isNaN(num) || !isFinite(num) || num < 0) return '0';
-
-    // Handle extremely large numbers that might cause overflow
-    if (num > 1e15) return '0';
-
-    // Handle different scales
-    if (num >= 1e12) return `${(num / 1e12).toFixed(1)}T`;
-    if (num >= 1e9) return `${(num / 1e9).toFixed(1)}B`;
-    if (num >= 1e6) return `${(num / 1e6).toFixed(1)}M`;
-    if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
-
-    return num.toFixed(1);
-  };
-
-  const safeParseNumber = (value: any): number => {
-    if (typeof value === 'number') return value;
-    if (!value || typeof value !== 'string') return 0;
-
-    // Remove any non-numeric characters except decimal point and minus
-    const cleaned = value.replace(/[^\d.-]/g, '');
-    const parsed = parseFloat(cleaned);
-    return isNaN(parsed) ? 0 : parsed;
-  };
-
-  const getUserBalance = (): number => {
-    return safeParseNumber(portfolioSummaryResponse?.data?.cashBalance);
-  };
-
-  const getAvailableQuantity = (companyId: string): number => {
-    const tokens = tokenizedShares.filter(
-      (t: any) => t.companyId === companyId
-    );
-    return tokens.reduce(
-      (total: number, token: any) =>
-        total + (token.remainingQuantity || token.quantity || 0),
-      0
-    );
   };
 
   const getPriceChangeClass = (change: number) => {
@@ -280,36 +182,8 @@ export default function Market() {
     );
   };
 
-  const generateCandlestickData = (basePrice: number) => {
-    const data = [];
-    let currentPrice = basePrice;
-
-    for (let i = 0; i < 30; i++) {
-      const variation = (Math.random() - 0.5) * 0.1;
-      const open = currentPrice;
-      const close = open * (1 + variation);
-      const high = Math.max(open, close) * (1 + Math.random() * 0.05);
-      const low = Math.min(open, close) * (1 - Math.random() * 0.05);
-
-      data.push({
-        date: new Date(
-          Date.now() - (29 - i) * 24 * 60 * 60 * 1000
-        ).toLocaleDateString(),
-        open: open.toFixed(2),
-        high: high.toFixed(2),
-        low: low.toFixed(2),
-        close: close.toFixed(2),
-        volume: Math.floor(Math.random() * 1000000) + 100000,
-      });
-
-      currentPrice = close;
-    }
-
-    return data;
-  };
-
   const handlePlaceOrder = () => {
-    if (!selectedCompanyId || !quantity) {
+    if (!selectedCompanyId || !quantity || !price) {
       toast({
         title: 'Error',
         description: 'Please fill all fields',
@@ -319,54 +193,12 @@ export default function Market() {
     }
 
     const quantityNum = parseInt(quantity);
+    const priceNum = parseFloat(price);
 
-    if (quantityNum <= 0) {
+    if (quantityNum <= 0 || priceNum <= 0) {
       toast({
         title: 'Error',
-        description: 'Invalid quantity',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Check if quantity exceeds available tokens for sell orders
-    if (orderType === 'sell') {
-      const availableQuantity = getAvailableQuantity(selectedCompanyId);
-      if (quantityNum > availableQuantity) {
-        toast({
-          title: 'Insufficient Tokens',
-          description: `You requested ${quantityNum} tokens but only ${availableQuantity} are available`,
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
-    // Get selected company and calculate total cost
-    const selectedCompany = availableCompanies.find(
-      (company: any) => company.id === selectedCompanyId
-    );
-
-    if (!selectedCompany) {
-      toast({
-        title: 'Error',
-        description: 'Selected company not found',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const pricePerToken = parseFloat(selectedCompany.currentPrice);
-    const totalCost = quantityNum * pricePerToken;
-    const userBalance = getUserBalance();
-
-    // Check balance for buy orders
-    if (orderType === 'buy' && totalCost > userBalance) {
-      toast({
-        title: 'Insufficient Balance',
-        description: `You need ${formatCurrency(
-          totalCost
-        )} but your balance is ${formatCurrency(userBalance)}`,
+        description: 'Invalid quantity or price',
         variant: 'destructive',
       });
       return;
@@ -376,16 +208,170 @@ export default function Market() {
       companyId: selectedCompanyId,
       orderType,
       quantity: quantityNum,
-      price: selectedCompany.currentPrice,
+      price: price,
+      orderTypeSelect,
     });
   };
 
-  const selectedCompany = allCompanies?.find(
+  const getAvailableTokens = (companyId: string): number => {
+    if (!availableTokensResponse?.data?.tokens) return 0;
+    const tokens = availableTokensResponse.data.tokens.filter(
+      (token: any) => token.companyId === companyId
+    );
+    return tokens.reduce(
+      (total: number, token: any) =>
+        total + (token.remainingQuantity || token.quantity || 0),
+      0
+    );
+  };
+
+  const companies = companiesResponse?.data?.companies || [];
+  const selectedCompany = companies.find(
     (c: any) => c.id === selectedCompanyId
   );
-  const candlestickData = selectedCompany
-    ? generateCandlestickData(parseFloat(selectedCompany.currentPrice))
-    : [];
+  const marketData = marketDataResponse?.data;
+  const orderBook = orderBookResponse?.data;
+  const marketTrades = marketTradesResponse?.data?.trades || [];
+
+  // Generate mock data for demonstration - exact match to screenshot
+  const mockOrderBook = {
+    buyOrders: [
+      { price: 3444.6, amount: 100, total: 344460.0 },
+      { price: 3437.4, amount: 472, total: 1622452.8 },
+      { price: 3387.55, amount: 479, total: 1622636.45 },
+      { price: 3339.76, amount: 88, total: 293898.88 },
+      { price: 3313.81, amount: 364, total: 1206226.84 },
+    ],
+    sellOrders: [
+      { price: 3469.0, amount: 302, total: 1047638.0 },
+      { price: 3501.38, amount: 261, total: 913860.18 },
+      { price: 3585.8, amount: 358, total: 1283716.4 },
+      { price: 3588.77, amount: 191, total: 685455.07 },
+      { price: 3616.94, amount: 85, total: 307439.9 },
+    ],
+    currentPrice: 3456.8,
+  };
+
+  const mockMarketTrades = [
+    { price: 1667.64, amount: 578, time: '11:25:52 am', isGreen: true },
+    { price: 1680.04, amount: 341, time: '11:17:54 am', isGreen: false },
+    { price: 1692.7, amount: 553, time: '11:16:57 am', isGreen: true },
+    { price: 1674.62, amount: 37, time: '11:16:45 am', isGreen: false },
+    { price: 1688.32, amount: 654, time: '11:15:49 am', isGreen: false },
+    { price: 1686.76, amount: 432, time: '11:15:48 am', isGreen: false },
+    { price: 1681.16, amount: 524, time: '11:15:30 am', isGreen: true },
+    { price: 1686.97, amount: 70, time: '11:15:24 am', isGreen: true },
+  ];
+
+  // Mock open orders data
+  const mockOpenOrders = [
+    {
+      id: '1',
+      company: 'TCS',
+      type: 'SELL',
+      quantity: 302,
+      price: 3469.0,
+      status: 'Pending',
+    },
+    {
+      id: '2',
+      company: 'TCS',
+      type: 'SELL',
+      quantity: 261,
+      price: 3501.38,
+      status: 'Pending',
+    },
+    {
+      id: '3',
+      company: 'TCS',
+      type: 'BUY',
+      quantity: 88,
+      price: 3339.76,
+      status: 'Pending',
+    },
+    {
+      id: '4',
+      company: 'ICICIBANK',
+      type: 'SELL',
+      quantity: 285,
+      price: 966.04,
+      status: 'Pending',
+    },
+    {
+      id: '5',
+      company: 'ICICIBANK',
+      type: 'SELL',
+      quantity: 150,
+      price: 968.5,
+      status: 'Pending',
+    },
+  ];
+
+  // Mock trade history data
+  const mockTradeHistory = [
+    {
+      id: '1',
+      company: 'ICICIBANK',
+      type: 'SELL',
+      quantity: 209,
+      price: 975.1,
+      time: '09:52:26 am',
+      total: 203795.9,
+    },
+    {
+      id: '2',
+      company: 'ICICIBANK',
+      type: 'BUY',
+      quantity: 120,
+      price: 910.27,
+      time: '09:52:26 am',
+      total: 109232.4,
+    },
+    {
+      id: '3',
+      company: 'ICICIBANK',
+      type: 'BUY',
+      quantity: 175,
+      price: 903.25,
+      time: '09:52:26 am',
+      total: 158068.75,
+    },
+    {
+      id: '4',
+      company: 'HDFCBANK',
+      type: 'BUY',
+      quantity: 48,
+      price: 1628.78,
+      time: '09:52:26 am',
+      total: 78181.44,
+    },
+    {
+      id: '5',
+      company: 'TCS',
+      type: 'SELL',
+      quantity: 95,
+      price: 3456.8,
+      time: '09:51:15 am',
+      total: 328396.0,
+    },
+    {
+      id: '6',
+      company: 'RELIANCE',
+      type: 'BUY',
+      quantity: 75,
+      price: 2500.0,
+      time: '09:50:30 am',
+      total: 187500.0,
+    },
+  ];
+
+  const mockMarketData = {
+    lastPrice: 3456.8,
+    change: 1.09,
+    high: 3620.54,
+    low: 3387.5,
+    volume: 1315932.763,
+  };
 
   return (
     <div className='min-h-screen bg-gray-50'>
@@ -398,310 +384,287 @@ export default function Market() {
           <div className='mb-8'>
             <h1 className='text-3xl font-bold text-gray-900 mb-2'>Market</h1>
             <p className='text-gray-600'>
-              Real-time market data, trading charts, and token exchange
+              Trade Tokenized Shares - Real-time Order Book and Market Analysis
             </p>
           </div>
 
           <div className='grid grid-cols-1 xl:grid-cols-3 gap-6'>
-            {/* Market Overview */}
+            {/* Left Column - Market Data */}
             <div className='xl:col-span-2 space-y-6'>
-              {/* Market Stats */}
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                {marketLoading ? (
-                  <>
-                    {[1, 2, 3].map((index) => (
-                      <Card key={index}>
-                        <CardContent className='p-4'>
-                          <div className='flex items-center space-x-2'>
-                            <div className='h-5 w-5 bg-gray-200 rounded animate-pulse' />
-                            <div className='flex-1'>
-                              <div className='h-4 bg-gray-200 rounded animate-pulse mb-2' />
-                              <div className='h-6 bg-gray-200 rounded animate-pulse' />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    <Card>
-                      <CardContent className='p-4'>
-                        <div className='flex items-center space-x-2'>
-                          <Activity className='h-5 w-5 text-blue-500' />
-                          <div>
-                            <p className='text-sm text-gray-600'>Market Cap</p>
-                            <p className='text-lg font-semibold'>
-                              ₹{formatLargeNumber(marketStats?.totalMarketCap)}T
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardContent className='p-4'>
-                        <div className='flex items-center space-x-2'>
-                          <TrendingUp className='h-5 w-5 text-green-500' />
-                          <div>
-                            <p className='text-sm text-gray-600'>Gainers</p>
-                            <p className='text-lg font-semibold text-green-600'>
-                              {marketStats?.gainers || 0}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardContent className='p-4'>
-                        <div className='flex items-center space-x-2'>
-                          <TrendingDown className='h-5 w-5 text-red-500' />
-                          <div>
-                            <p className='text-sm text-gray-600'>Losers</p>
-                            <p className='text-lg font-semibold text-red-600'>
-                              {marketStats?.losers || 0}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </>
-                )}
-              </div>
-
-              {/* Market Table */}
+              {/* Select Company */}
               <Card>
-                <CardHeader>
-                  <CardTitle className='flex items-center'>
-                    <BarChart3 className='mr-2 h-5 w-5' />
-                    Market Overview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {marketLoading ? (
-                    <div className='flex items-center justify-center py-12'>
-                      <DataLoading text='Loading market data...' />
-                    </div>
-                  ) : (
-                    <div className='overflow-x-auto'>
-                      <table className='w-full'>
-                        <thead>
-                          <tr className='border-b'>
-                            <th className='text-left py-3 px-4 font-medium text-gray-600'>
-                              Company
-                            </th>
-                            <th className='text-right py-3 px-4 font-medium text-gray-600'>
-                              Price
-                            </th>
-                            <th className='text-right py-3 px-4 font-medium text-gray-600'>
-                              Change
-                            </th>
-                            <th className='text-right py-3 px-4 font-medium text-gray-600'>
-                              Volume
-                            </th>
-                            <th className='text-right py-3 px-4 font-medium text-gray-600'>
-                              Market Cap
-                            </th>
-                            <th className='text-center py-3 px-4 font-medium text-gray-600'>
-                              Action
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {allCompanies.length > 0 ? (
-                            allCompanies.map((company: any) => {
-                              const currentPrice = parseFloat(
-                                company.currentPrice
-                              );
-                              const previousClose = parseFloat(
-                                company.previousClose
-                              );
-                              const priceChange = company.priceChange;
-                              const changePercent = parseFloat(
-                                company.changePercentage
-                              );
-                              const volume = parseInt(company.volume);
-                              const marketCap = parseFloat(company.marketCap);
-
-                              return (
-                                <tr
-                                  key={company.id}
-                                  className='border-b hover:bg-gray-50'
-                                >
-                                  <td className='py-3 px-4'>
-                                    <div>
-                                      <div className='font-medium'>
-                                        {company.name}
-                                      </div>
-                                      <div className='text-sm text-gray-600'>
-                                        {company.symbol}
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className='text-right py-3 px-4 font-medium'>
-                                    {formatCurrency(currentPrice)}
-                                  </td>
-                                  <td
-                                    className={`text-right py-3 px-4 ${getPriceChangeClass(
-                                      priceChange
-                                    )}`}
-                                  >
-                                    <div className='flex items-center justify-end space-x-1'>
-                                      {getPriceChangeIcon(priceChange)}
-                                      <span>
-                                        {changePercent >= 0 ? '+' : ''}
-                                        {changePercent.toFixed(2)}%
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className='text-right py-3 px-4 text-gray-600'>
-                                    {formatVolume(volume)}
-                                  </td>
-                                  <td className='text-right py-3 px-4 text-gray-600'>
-                                    ₹{formatLargeNumber(marketCap)}Cr
-                                  </td>
-                                  <td className='text-center py-3 px-4'>
-                                    <Button
-                                      size='sm'
-                                      onClick={() =>
-                                        setSelectedCompanyId(company.id)
-                                      }
-                                      variant='outline'
-                                    >
-                                      Trade
-                                    </Button>
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          ) : (
-                            <tr>
-                              <td
-                                colSpan={6}
-                                className='text-center py-8 text-gray-500'
-                              >
-                                No market data available
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                <CardContent className='p-6'>
+                  <Label
+                    htmlFor='company'
+                    className='text-sm font-medium text-gray-700 mb-2 block'
+                  >
+                    Select Company
+                  </Label>
+                  <Select
+                    value={selectedCompanyId}
+                    onValueChange={setSelectedCompanyId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder='Choose a company' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {companiesLoading ? (
+                        <SelectItem value='loading' disabled>
+                          <DataLoading text='Loading companies...' />
+                        </SelectItem>
+                      ) : companies.length > 0 ? (
+                        companies.map((company: any) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.name} ({company.symbol})
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value='no-companies' disabled>
+                          No companies available
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
                 </CardContent>
               </Card>
 
-              {/* Chart Section */}
+              {/* Market Watch */}
               {selectedCompany && (
                 <Card>
                   <CardHeader>
-                    <div className='flex items-center justify-between'>
-                      <CardTitle className='flex items-center'>
-                        <BarChart3 className='mr-2 h-5 w-5' />
-                        {selectedCompany.name} ({selectedCompany.symbol})
-                      </CardTitle>
-                      <div className='flex space-x-2'>
-                        {['1D', '1W', '1M', '3M', '1Y'].map((timeframe) => (
-                          <Button
-                            key={timeframe}
-                            size='sm'
-                            variant={
-                              chartTimeframe === timeframe
-                                ? 'default'
-                                : 'outline'
-                            }
-                            onClick={() => setChartTimeframe(timeframe)}
-                          >
-                            {timeframe}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
+                    <CardTitle className='flex items-center'>
+                      <BarChart3 className='mr-2 h-5 w-5' />
+                      Market Watch - {selectedCompany.symbol}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className='mb-4'>
-                      <div className='text-2xl font-bold'>
-                        {formatCurrency(
-                          parseFloat(selectedCompany.currentPrice)
-                        )}
-                      </div>
-                      <div
-                        className={`flex items-center space-x-1 ${
-                          selectedCompany.isGaining
-                            ? 'text-green-600'
-                            : 'text-red-600'
-                        }`}
-                      >
-                        {selectedCompany.isGaining ? (
-                          <TrendingUp className='h-4 w-4' />
-                        ) : (
-                          <TrendingDown className='h-4 w-4' />
-                        )}
-                        <span>
-                          {selectedCompany.changePercentage >= 0 ? '+' : ''}
-                          {selectedCompany.changePercentage}% (+₹
-                          {selectedCompany.priceChange})
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Simple Candlestick Representation */}
-                    <div className='h-64 bg-gray-100 rounded-lg p-4 flex items-end space-x-1'>
-                      {candlestickData.slice(-20).map((candle, index) => {
-                        const height = Math.random() * 150 + 50;
-                        const isGreen =
-                          parseFloat(candle.close) >= parseFloat(candle.open);
-
-                        return (
-                          <div
-                            key={index}
-                            className='flex-1 flex flex-col items-center'
-                          >
-                            <div
-                              className={`w-full ${
-                                isGreen ? 'bg-green-500' : 'bg-red-500'
-                              } rounded-sm`}
-                              style={{ height: `${height}px` }}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div className='mt-4 grid grid-cols-4 gap-4 text-sm'>
+                    <div className='grid grid-cols-2 md:grid-cols-5 gap-4'>
                       <div>
-                        <span className='text-gray-600'>Open: </span>
-                        <span className='font-medium'>
-                          ₹{candlestickData[candlestickData.length - 1]?.open}
-                        </span>
+                        <p className='text-sm text-gray-600'>Last Price</p>
+                        <p className='text-lg font-semibold'>
+                          ₹{mockMarketData.lastPrice.toFixed(2)}
+                        </p>
                       </div>
                       <div>
-                        <span className='text-gray-600'>High: </span>
-                        <span className='font-medium'>
-                          ₹{candlestickData[candlestickData.length - 1]?.high}
-                        </span>
+                        <p className='text-sm text-gray-600'>24h Change</p>
+                        <div className='flex items-center space-x-1'>
+                          <TrendingUp className='h-4 w-4 text-green-600' />
+                          <span className='text-green-600 font-semibold'>
+                            +{mockMarketData.change}%
+                          </span>
+                        </div>
                       </div>
                       <div>
-                        <span className='text-gray-600'>Low: </span>
-                        <span className='font-medium'>
-                          ₹{candlestickData[candlestickData.length - 1]?.low}
-                        </span>
+                        <p className='text-sm text-gray-600'>24h High</p>
+                        <p className='text-lg font-semibold'>
+                          ₹{mockMarketData.high.toFixed(2)}
+                        </p>
                       </div>
                       <div>
-                        <span className='text-gray-600'>Close: </span>
-                        <span className='font-medium'>
-                          ₹{candlestickData[candlestickData.length - 1]?.close}
-                        </span>
+                        <p className='text-sm text-gray-600'>24h Low</p>
+                        <p className='text-lg font-semibold'>
+                          ₹{mockMarketData.low.toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className='text-sm text-gray-600'>24h Volume</p>
+                        <p className='text-lg font-semibold'>
+                          {formatVolume(mockMarketData.volume)}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               )}
+
+              {/* Order Book */}
+              {selectedCompany && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className='flex items-center justify-center'>
+                      <BarChart3 className='mr-2 h-5 w-5' />
+                      Order Book - {selectedCompany.symbol}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className='text-center mb-6'>
+                      <div className='text-2xl font-bold text-blue-600'>
+                        Current Price: ₹{mockOrderBook.currentPrice.toFixed(2)}
+                      </div>
+                    </div>
+
+                    <div className='grid grid-cols-2 gap-8'>
+                      {/* Sell Orders */}
+                      <div>
+                        <h3 className='text-lg font-semibold text-red-600 mb-4 flex items-center'>
+                          <TrendingDown className='mr-2 h-4 w-4' />
+                          Sell Orders
+                        </h3>
+                        <div className='space-y-3'>
+                          <div className='grid grid-cols-3 gap-4 text-sm font-medium text-gray-600 pb-3 border-b'>
+                            <span>Price</span>
+                            <span>Amount</span>
+                            <span>Total</span>
+                          </div>
+                          {mockOrderBook.sellOrders.map((order, index) => (
+                            <div
+                              key={index}
+                              className='grid grid-cols-3 gap-4 text-sm py-2 bg-red-50 rounded'
+                            >
+                              <span className='text-red-600 font-medium'>
+                                ₹{order.price.toFixed(2)}
+                              </span>
+                              <span>{formatNumber(order.amount)}</span>
+                              <span>₹{formatNumber(order.total)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Buy Orders */}
+                      <div>
+                        <h3 className='text-lg font-semibold text-green-600 mb-4 flex items-center'>
+                          <TrendingUp className='mr-2 h-4 w-4' />
+                          Buy Orders
+                        </h3>
+                        <div className='space-y-3'>
+                          <div className='grid grid-cols-3 gap-4 text-sm font-medium text-gray-600 pb-3 border-b'>
+                            <span>Price</span>
+                            <span>Amount</span>
+                            <span>Total</span>
+                          </div>
+                          {mockOrderBook.buyOrders.map((order, index) => (
+                            <div
+                              key={index}
+                              className='grid grid-cols-3 gap-4 text-sm py-2 bg-green-50 rounded'
+                            >
+                              <span className='text-green-600 font-medium'>
+                                ₹{order.price.toFixed(2)}
+                              </span>
+                              <span>{formatNumber(order.amount)}</span>
+                              <span>₹{formatNumber(order.total)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Order Management */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className='flex items-center'>
+                    <BarChart3 className='mr-2 h-5 w-5' />
+                    Order Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue='open-orders' className='w-full'>
+                    <TabsList className='grid w-full grid-cols-3'>
+                      <TabsTrigger value='open-orders'>Open Orders</TabsTrigger>
+                      <TabsTrigger value='order-history'>
+                        Order History
+                      </TabsTrigger>
+                      <TabsTrigger value='trades'>Trades</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value='open-orders' className='mt-4'>
+                      <div className='space-y-3 max-h-64 overflow-y-auto'>
+                        {mockOpenOrders.map((order) => (
+                          <div
+                            key={order.id}
+                            className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
+                          >
+                            <div className='flex items-center space-x-3'>
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  order.type === 'BUY'
+                                    ? 'bg-green-500'
+                                    : 'bg-red-500'
+                                }`}
+                              />
+                              <div>
+                                <div className='font-medium text-sm'>
+                                  {order.company} - {order.type}
+                                </div>
+                                <div className='text-sm text-gray-600'>
+                                  {order.quantity} @ ₹{order.price.toFixed(2)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className='text-right'>
+                              <Badge
+                                variant='secondary'
+                                className='bg-green-100 text-green-700'
+                              >
+                                {order.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value='trades' className='mt-4'>
+                      <div className='space-y-3 max-h-64 overflow-y-auto'>
+                        {mockTradeHistory.map((trade) => (
+                          <div
+                            key={trade.id}
+                            className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
+                          >
+                            <div className='flex items-center space-x-3'>
+                              <div
+                                className={`p-1 rounded ${
+                                  trade.type === 'BUY'
+                                    ? 'bg-green-100 text-green-600'
+                                    : 'bg-red-100 text-red-600'
+                                }`}
+                              >
+                                {trade.type === 'BUY' ? (
+                                  <TrendingUp className='h-3 w-3' />
+                                ) : (
+                                  <TrendingDown className='h-3 w-3' />
+                                )}
+                              </div>
+                              <div>
+                                <div className='font-medium text-sm'>
+                                  {trade.company} - {trade.type}
+                                </div>
+                                <div className='text-sm text-gray-600'>
+                                  {trade.quantity} @ ₹{trade.price.toFixed(2)}
+                                </div>
+                                <div className='text-xs text-gray-500'>
+                                  {trade.time}
+                                </div>
+                              </div>
+                            </div>
+                            <div className='text-right'>
+                              <div className='font-semibold text-sm'>
+                                ₹{formatNumber(trade.total)}
+                              </div>
+                              <div className='text-xs text-gray-500'>Total</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value='order-history' className='mt-4'>
+                      <div className='text-center py-8 text-gray-500'>
+                        <Clock className='h-8 w-8 mx-auto mb-2 text-gray-400' />
+                        <p>No order history</p>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Trading Panel */}
-            <div className='space-y-6'>
+            {/* Right Column - Trading Tools */}
+            <div className='space-y-8'>
+              {/* Place Order */}
               <Card>
                 <CardHeader>
                   <CardTitle className='flex items-center'>
@@ -710,290 +673,156 @@ export default function Market() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className='space-y-4'>
-                  <Tabs
-                    value={orderType}
-                    onValueChange={(value) =>
-                      setOrderType(value as 'buy' | 'sell')
-                    }
-                  >
-                    <TabsList className='grid w-full grid-cols-2'>
-                      <TabsTrigger value='buy' className='text-green-600'>
-                        Buy
-                      </TabsTrigger>
-                      <TabsTrigger value='sell' className='text-red-600'>
-                        Sell
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-
-                  {/* Balance Display */}
-                  {!balanceLoading && (
-                    <div className='bg-blue-50 p-3 rounded-lg'>
-                      <div className='flex justify-between items-center'>
-                        <span className='text-sm text-gray-600'>
-                          Available Balance
-                        </span>
-                        <span className='text-lg font-semibold text-blue-600'>
-                          {formatCurrency(getUserBalance())}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <Label htmlFor='company'>Select Company</Label>
-                    <Select
-                      value={selectedCompanyId}
-                      onValueChange={setSelectedCompanyId}
+                  {/* Buy/Sell Toggle */}
+                  <div className='flex space-x-2'>
+                    <Button
+                      variant={orderType === 'buy' ? 'default' : 'outline'}
+                      onClick={() => setOrderType('buy')}
+                      className='flex-1 bg-green-600 hover:bg-green-700'
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder='Choose a company' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {tokensLoading ||
-                        marketTokensLoading ||
-                        companiesLoading ? (
-                          <SelectItem value='loading' disabled>
-                            <DataLoading text='Loading companies...' />
-                          </SelectItem>
-                        ) : availableCompanies &&
-                          availableCompanies.length > 0 ? (
-                          availableCompanies.map((company: any) => {
-                            const availableQuantity = getAvailableQuantity(
-                              company.id
-                            );
-                            return (
-                              <SelectItem key={company?.id} value={company?.id}>
-                                <div className='flex items-center justify-between w-full'>
-                                  <span>
-                                    {company?.name} ({company?.symbol})
-                                  </span>
-                                  <span className='text-xs text-green-600 font-medium'>
-                                    {availableQuantity} available
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            );
-                          })
-                        ) : (
-                          <SelectItem value='no-companies' disabled>
-                            No companies available
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
+                      Buy
+                    </Button>
+                    <Button
+                      variant={orderType === 'sell' ? 'default' : 'outline'}
+                      onClick={() => setOrderType('sell')}
+                      className='flex-1 bg-red-600 hover:bg-red-700'
+                    >
+                      Sell
+                    </Button>
                   </div>
 
+                  {/* Available Balance */}
+                  <div className='bg-blue-50 p-3 rounded-lg'>
+                    <div className='flex justify-between items-center'>
+                      <span className='text-sm text-gray-600'>
+                        Available Balance:
+                      </span>
+                      <span className='text-lg font-semibold text-blue-600'>
+                        ₹50,00,000
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Order Type */}
                   <div>
-                    <Label htmlFor='quantity'>Quantity</Label>
+                    <Label
+                      htmlFor='orderType'
+                      className='text-sm font-medium text-gray-700 mb-2 block'
+                    >
+                      Order Type
+                    </Label>
+                    <Select
+                      value={orderTypeSelect}
+                      onValueChange={setOrderTypeSelect}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='limit'>Limit Order</SelectItem>
+                        <SelectItem value='market'>Market Order</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className='text-xs text-gray-500 mt-1'>
+                      Execute only at your specified price or better
+                    </p>
+                  </div>
+
+                  {/* Quantity */}
+                  <div>
+                    <Label
+                      htmlFor='quantity'
+                      className='text-sm font-medium text-gray-700 mb-2 block'
+                    >
+                      Quantity
+                    </Label>
                     <Input
                       id='quantity'
                       type='number'
                       placeholder='Enter quantity'
                       value={quantity}
                       onChange={(e) => setQuantity(e.target.value)}
-                      max={
-                        selectedCompanyId
-                          ? getAvailableQuantity(selectedCompanyId)
-                          : undefined
-                      }
                       min='1'
-                      className={
-                        selectedCompanyId &&
-                        quantity &&
-                        (() => {
-                          const quantityNum = parseInt(quantity);
-                          const availableQuantity =
-                            getAvailableQuantity(selectedCompanyId);
-                          return (
-                            isNaN(quantityNum) ||
-                            quantityNum < 1 ||
-                            quantityNum > availableQuantity
-                          );
-                        })()
-                          ? 'border-red-500 focus:border-red-500'
-                          : ''
-                      }
                     />
-                    {selectedCompanyId && (
-                      <div className='text-xs mt-1'>
-                        <p className='text-gray-500'>
-                          Maximum available:{' '}
-                          {getAvailableQuantity(selectedCompanyId)} tokens
-                        </p>
-                        {quantity &&
-                          (() => {
-                            const quantityNum = parseInt(quantity);
-                            const availableQuantity =
-                              getAvailableQuantity(selectedCompanyId);
-
-                            if (isNaN(quantityNum) || quantityNum < 1) {
-                              return (
-                                <div className='text-red-600 mt-1'>
-                                  <p className='font-medium'>
-                                    ⚠️ Invalid quantity
-                                  </p>
-                                  <p className='text-xs'>
-                                    Please enter a valid number greater than 0
-                                  </p>
-                                </div>
-                              );
-                            }
-
-                            if (quantityNum > availableQuantity) {
-                              return (
-                                <div className='text-red-600 mt-1'>
-                                  <p className='font-medium'>
-                                    ⚠️ Quantity exceeds available tokens
-                                  </p>
-                                  <p className='text-xs'>
-                                    You requested {quantityNum} but only{' '}
-                                    {availableQuantity} are available
-                                  </p>
-                                </div>
-                              );
-                            }
-
-                            return null;
-                          })()}
-                      </div>
-                    )}
                   </div>
 
-                  {/* Cost Preview for Buy Orders */}
-                  {orderType === 'buy' &&
-                    selectedCompanyId &&
-                    quantity &&
-                    (() => {
-                      const selectedCompany = availableCompanies.find(
-                        (company: any) => company.id === selectedCompanyId
-                      );
-                      if (!selectedCompany) return null;
+                  {/* Price per Token */}
+                  <div>
+                    <Label
+                      htmlFor='price'
+                      className='text-sm font-medium text-gray-700 mb-2 block'
+                    >
+                      Price per Token
+                    </Label>
+                    <Input
+                      id='price'
+                      type='number'
+                      placeholder='Enter limit price'
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      min='0.01'
+                      step='0.01'
+                    />
+                  </div>
 
-                      const quantityNum = parseInt(quantity);
-                      const pricePerToken = parseFloat(
-                        selectedCompany.currentPrice
-                      );
-                      const totalCost = quantityNum * pricePerToken;
-                      const userBalance = getUserBalance();
-                      const hasInsufficientBalance = totalCost > userBalance;
-
-                      return (
-                        <div
-                          className={`p-3 rounded-lg ${
-                            hasInsufficientBalance
-                              ? 'bg-red-50 border border-red-200'
-                              : 'bg-green-50 border border-green-200'
-                          }`}
-                        >
-                          <div className='text-sm space-y-1'>
-                            <div className='flex justify-between'>
-                              <span className='text-gray-600'>
-                                Price per token:
-                              </span>
-                              <span className='font-medium'>
-                                {formatCurrency(pricePerToken)}
-                              </span>
-                            </div>
-                            <div className='flex justify-between'>
-                              <span className='text-gray-600'>Total cost:</span>
-                              <span
-                                className={`font-semibold ${
-                                  hasInsufficientBalance
-                                    ? 'text-red-600'
-                                    : 'text-green-600'
-                                }`}
-                              >
-                                {formatCurrency(totalCost)}
-                              </span>
-                            </div>
-                            {hasInsufficientBalance && (
-                              <div className='flex justify-between text-red-600 text-xs'>
-                                <span>Insufficient balance</span>
-                                <span>
-                                  Need {formatCurrency(totalCost - userBalance)}{' '}
-                                  more
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })()}
-
+                  {/* Place Order Button */}
                   <Button
                     onClick={handlePlaceOrder}
-                    className='w-full'
-                    variant={orderType === 'buy' ? 'default' : 'destructive'}
+                    className='w-full bg-blue-600 hover:bg-blue-700'
                     disabled={
                       !selectedCompanyId ||
                       !quantity ||
-                      createOrderMutation.isPending ||
-                      (() => {
-                        const quantityNum = parseInt(quantity);
-                        const availableQuantity =
-                          getAvailableQuantity(selectedCompanyId);
-
-                        // Check if quantity exceeds available tokens
-                        if (quantityNum > availableQuantity) return true;
-
-                        // Check balance for buy orders
-                        if (orderType === 'buy') {
-                          const selectedCompany = availableCompanies.find(
-                            (company: any) => company.id === selectedCompanyId
-                          );
-                          if (!selectedCompany) return true;
-                          const pricePerToken = parseFloat(
-                            selectedCompany.currentPrice
-                          );
-                          const totalCost = quantityNum * pricePerToken;
-                          const userBalance = getUserBalance();
-                          return totalCost > userBalance;
-                        }
-
-                        return false;
-                      })()
+                      !price ||
+                      createOrderMutation.isPending
                     }
                   >
                     {createOrderMutation.isPending
                       ? 'Placing Order...'
-                      : `Place ${orderType.toUpperCase()} Order`}
+                      : `Place ${orderTypeSelect} ${orderType} Order`}
                   </Button>
                 </CardContent>
               </Card>
 
-              {/* Market News */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Market News</CardTitle>
-                </CardHeader>
-                <CardContent className='space-y-3'>
-                  <div className='p-3 border-l-4 border-green-500 bg-green-50'>
-                    <div className='font-medium text-sm'>
-                      TCS Reports Strong Q4 Results
+              {/* Market Trades */}
+              {selectedCompany && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className='flex items-center '>
+                      <Clock className='mr-2 h-5 w-5' />
+                      Market Trades - {selectedCompany.symbol}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className='justify-between'>
+                      <div className='grid grid-cols-3 gap-4 text-sm font-medium text-gray-600 pb-3 border-b'>
+                        <span>Price (₹)</span>
+                        <span>Amount</span>
+                        <span>Time</span>
+                      </div>
+                      <div className='max-h-64 overflow-y-auto justify-between'>
+                        {mockMarketTrades.map((trade, index) => (
+                          <div
+                            key={index}
+                            className='grid grid-cols-3 gap-4 text-sm py-2'
+                          >
+                            <span
+                              className={`font-medium ${
+                                trade.isGreen
+                                  ? 'text-green-600'
+                                  : 'text-red-600'
+                              }`}
+                            >
+                              ₹{trade.price.toFixed(2)}
+                            </span>
+                            <span>{formatNumber(trade.amount)}</span>
+                            <span className='text-gray-500'>{trade.time}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className='text-xs text-gray-600 mt-1'>
-                      Revenue up 12% YoY, margin expansion continues
-                    </div>
-                  </div>
-                  <div className='p-3 border-l-4 border-blue-500 bg-blue-50'>
-                    <div className='font-medium text-sm'>
-                      Reliance Expands Digital Portfolio
-                    </div>
-                    <div className='text-xs text-gray-600 mt-1'>
-                      New partnerships in fintech and e-commerce
-                    </div>
-                  </div>
-                  <div className='p-3 border-l-4 border-purple-500 bg-purple-50'>
-                    <div className='font-medium text-sm'>
-                      Infosys Wins Major Contract
-                    </div>
-                    <div className='text-xs text-gray-600 mt-1'>
-                      $1.5B deal with European bank announced
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </main>

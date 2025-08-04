@@ -15,7 +15,7 @@ import {
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-  // { name: 'Market', href: '/market', icon: TrendingUp },
+  { name: 'Market', href: '/market', icon: TrendingUp },
   { name: 'Wallet', href: '/wallet', icon: Wallet },
   { name: 'Tokenize Shares', href: '/tokenize', icon: Coins },
   { name: 'Token Trading', href: '/trading', icon: ArrowRightLeft },
