@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { PageLoading } from '@/components/LoadingSpinner';
+import MobileNav from '@/components/MobileNav';
 
 interface UserProfile {
   id: string;
@@ -136,17 +137,17 @@ export default function Settings() {
         <Header />
         <div className='flex'>
           <Sidebar />
-          <main className='flex-1 p-6'>
-            <div className='mb-8'>
-              <h1 className='text-3xl font-bold text-gray-900 mb-2'>
+          <main className='flex-1 p-4 sm:p-6 pb-20 lg:pb-6'>
+            <div className='mb-6 sm:mb-8'>
+              <h1 className='text-2xl sm:text-3xl font-bold text-gray-900 mb-2'>
                 Settings
               </h1>
-              <p className='text-gray-600'>
+              <p className='text-sm sm:text-base text-gray-600'>
                 Manage your account settings and preferences
               </p>
             </div>
             <Card>
-              <CardContent className='p-6'>
+              <CardContent className='p-4 sm:p-6'>
                 <div className='text-center'>
                   <p className='text-gray-600 mb-4'>
                     Unable to load profile information. Please try refreshing
@@ -160,6 +161,7 @@ export default function Settings() {
             </Card>
           </main>
         </div>
+        <MobileNav />
       </div>
     );
   }
@@ -171,10 +173,12 @@ export default function Settings() {
       <div className='flex'>
         <Sidebar />
 
-        <main className='flex-1 p-6'>
-          <div className='mb-8'>
-            <h1 className='text-3xl font-bold text-gray-900 mb-2'>Settings</h1>
-            <p className='text-gray-600'>
+        <main className='flex-1 p-4 sm:p-6 pb-20 lg:pb-6'>
+          <div className='mb-6 sm:mb-8'>
+            <h1 className='text-2xl sm:text-3xl font-bold text-gray-900 mb-2'>
+              Settings
+            </h1>
+            <p className='text-sm sm:text-base text-gray-600'>
               Manage your account settings and preferences
             </p>
           </div>
@@ -289,6 +293,7 @@ export default function Settings() {
           </Tabs>
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }

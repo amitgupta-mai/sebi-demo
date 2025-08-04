@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { DataLoading, TableLoading } from '@/components/LoadingSpinner';
+import MobileNav from '@/components/MobileNav';
 
 interface PortfolioSummary {
   totalPortfolioValue: string;
@@ -135,9 +136,9 @@ export default function Dashboard() {
       <div className='flex'>
         <Sidebar />
 
-        <main className='flex-1 p-6'>
+        <main className='flex-1 p-4 sm:p-6 pb-20 lg:pb-6'>
           {/* Portfolio Overview Cards */}
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8'>
             <Card>
               <CardContent className='p-6'>
                 <div className='flex items-center justify-between'>
@@ -250,7 +251,7 @@ export default function Dashboard() {
           />
 
           {/* Recent Transactions */}
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8'>
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-6 sm:mt-8'>
             <Card>
               <CardContent className='p-6'>
                 <h3 className='text-lg font-semibold text-gray-900 mb-6'>
@@ -360,6 +361,7 @@ export default function Dashboard() {
           </div>
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }

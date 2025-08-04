@@ -29,9 +29,9 @@ export default function Sidebar() {
   const [location] = useLocation();
 
   return (
-    <aside className='w-64 bg-white shadow-sm h-screen sticky top-16 overflow-y-auto flex flex-col'>
-      <nav className='p-6 flex-1'>
-        <ul className='space-y-2'>
+    <aside className='w-64 bg-white shadow-sm h-screen sticky top-16 overflow-y-auto flex flex-col hidden lg:flex'>
+      <nav className='p-4 sm:p-6 flex-1'>
+        <ul className='space-y-1 sm:space-y-2'>
           {navigation.map((item) => {
             const isActive =
               location === item.href ||
@@ -42,13 +42,13 @@ export default function Sidebar() {
                 <Link href={item.href}>
                   <span
                     className={cn(
-                      'flex items-center space-x-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors cursor-pointer',
+                      'flex items-center space-x-2 sm:space-x-3 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium transition-colors cursor-pointer',
                       isActive
                         ? 'text-primary bg-blue-50'
                         : 'text-gray-700 hover:text-primary hover:bg-gray-50'
                     )}
                   >
-                    <item.icon className='h-5 w-5' />
+                    <item.icon className='h-4 w-4 sm:h-5 sm:w-5' />
                     <span>{item.name}</span>
                   </span>
                 </Link>
@@ -59,13 +59,13 @@ export default function Sidebar() {
       </nav>
 
       {/* Powered by Kalp Studio */}
-      <div className='p-6 pt-0'>
+      <div className='p-4 sm:p-6 pt-0'>
         <div className='flex flex-col items-center justify-center space-y-1 text-gray-500'>
           <span className='text-xs font-medium'>Powered by</span>
           <img
             src='https://dev-ks-website.s3.ap-south-1.amazonaws.com/assets/kalp-digital.svg'
             alt='Kalp Studio'
-            className='h-6 w-auto'
+            className='h-5 sm:h-6 w-auto'
           />
         </div>
       </div>

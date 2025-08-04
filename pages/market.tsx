@@ -30,6 +30,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { DataLoading } from '@/components/LoadingSpinner';
+import MobileNav from '@/components/MobileNav';
 
 export default function Market() {
   const { toast } = useToast();
@@ -54,42 +55,18 @@ export default function Market() {
   });
 
   // Fetch market data for selected company
-  const { data: marketDataResponse, isLoading: marketLoading } = useQuery<{
-    success: boolean;
-    message: string;
-    data: any;
-  }>({
-    queryKey: ['/api/market/company', selectedCompanyId],
-    enabled: !!selectedCompanyId,
-  });
-
-  // Fetch order book for selected company
-  const { data: orderBookResponse, isLoading: orderBookLoading } = useQuery<{
-    success: boolean;
-    message: string;
-    data: {
-      buyOrders: any[];
-      sellOrders: any[];
-      currentPrice: string;
-    };
-  }>({
-    queryKey: ['/api/market/orderbook', selectedCompanyId],
-    enabled: !!selectedCompanyId,
-  });
+  // const { data: marketDataResponse, isLoading: marketLoading } = useQuery<{
+  //   success: boolean;
+  //   message: string;
+  //   data: any;
+  // }>({
+  //   queryKey: ['/api/market/company', selectedCompanyId],
+  //   enabled: !!selectedCompanyId,
+  // });
 
   // Fetch market trades for selected company
-  const { data: marketTradesResponse, isLoading: tradesLoading } = useQuery<{
-    success: boolean;
-    message: string;
-    data: {
-      trades: any[];
-    };
-  }>({
-    queryKey: ['/api/market/trades', selectedCompanyId],
-    enabled: !!selectedCompanyId,
-  });
 
-  // Fetch available tokens for user
+  // Fetch available tokens for user (for selling)
   const { data: availableTokensResponse, isLoading: tokensLoading } = useQuery<{
     success: boolean;
     message: string;
@@ -161,6 +138,7 @@ export default function Market() {
         companyId: data.companyId,
         quantity: data.quantity,
         pricePerToken: parseFloat(data.price),
+        executionType: data.orderTypeSelect,
       });
     },
     onSuccess: (data, variables) => {
@@ -286,11 +264,18 @@ export default function Market() {
   };
 
   const getAvailableTokens = (companyId: string): number => {
-    if (!availableTokensResponse?.data?.tokens) return 0;
-    const tokens = availableTokensResponse.data.tokens.filter(
+    // Use different data sources based on order type
+    const tokens =
+      orderType === 'buy'
+        ? availableMarketTokensResponse?.data?.orders || []
+        : availableTokensResponse?.data?.tokens || [];
+
+    if (!tokens.length) return 0;
+
+    const companyTokens = tokens.filter(
       (token: any) => token.companyId === companyId
     );
-    return tokens.reduce(
+    return companyTokens.reduce(
       (total: number, token: any) =>
         total + (token.remainingQuantity || token.quantity || 0),
       0
@@ -301,7 +286,7 @@ export default function Market() {
     return walletResponse?.data?.balance || 0;
   };
 
-  // Extract available tokens from API response based on selected tab
+  // Extract available tokens from API response based on order type
   const availableTokens =
     orderType === 'buy'
       ? availableMarketTokensResponse?.data?.orders || []
@@ -329,9 +314,6 @@ export default function Market() {
   const selectedCompany = companies.find(
     (c: any) => c.id === selectedCompanyId
   );
-  const marketData = marketDataResponse?.data;
-  const orderBook = orderBookResponse?.data;
-  const marketTrades = marketTradesResponse?.data?.trades || [];
 
   // Get real orders from API response
   const realOrders = ordersResponse?.data?.orders || [];
@@ -347,6 +329,8 @@ export default function Market() {
     (order: any) => order.status === 'filled'
   );
 
+  const marketTrades = tradeHistory;
+
   return (
     <div className='min-h-screen bg-gray-50'>
       <Header />
@@ -354,20 +338,22 @@ export default function Market() {
       <div className='flex'>
         <Sidebar />
 
-        <main className='flex-1 p-6'>
-          <div className='mb-8'>
-            <h1 className='text-3xl font-bold text-gray-900 mb-2'>Market</h1>
-            <p className='text-gray-600'>
+        <main className='flex-1 p-4 sm:p-6 pb-20 lg:pb-6'>
+          <div className='mb-6 sm:mb-8'>
+            <h1 className='text-2xl sm:text-3xl font-bold text-gray-900 mb-2'>
+              Market
+            </h1>
+            <p className='text-sm sm:text-base text-gray-600'>
               Trade Tokenized Shares - Real-time Order Book and Market Analysis
             </p>
           </div>
 
-          <div className='grid grid-cols-1 xl:grid-cols-3 gap-6'>
+          <div className='grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6'>
             {/* Left Column - Market Data */}
-            <div className='xl:col-span-2 space-y-6'>
+            <div className='lg:col-span-2 space-y-4 sm:space-y-6'>
               {/* Select Company */}
               <Card>
-                <CardContent className='p-6'>
+                <CardContent className='p-4 sm:p-6'>
                   <Label
                     htmlFor='company'
                     className='text-sm font-medium text-gray-700 mb-2 block'
@@ -428,10 +414,10 @@ export default function Market() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className='grid grid-cols-2 md:grid-cols-5 gap-4'>
+                    <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4'>
                       <div>
                         <p className='text-sm text-gray-600'>Last Price</p>
-                        <p className='text-lg font-semibold'>
+                        <p className='text-base sm:text-lg font-semibold'>
                           ₹
                           {selectedCompany?.currentPrice
                             ? parseFloat(selectedCompany.currentPrice).toFixed(
@@ -451,7 +437,7 @@ export default function Market() {
                       </div>
                       <div>
                         <p className='text-sm text-gray-600'>24h High</p>
-                        <p className='text-lg font-semibold'>
+                        <p className='text-base sm:text-lg font-semibold'>
                           ₹
                           {selectedCompany?.currentPrice
                             ? (
@@ -462,7 +448,7 @@ export default function Market() {
                       </div>
                       <div>
                         <p className='text-sm text-gray-600'>24h Low</p>
-                        <p className='text-lg font-semibold'>
+                        <p className='text-base sm:text-lg font-semibold'>
                           ₹
                           {selectedCompany?.currentPrice
                             ? (
@@ -473,7 +459,7 @@ export default function Market() {
                       </div>
                       <div>
                         <p className='text-sm text-gray-600'>24h Volume</p>
-                        <p className='text-lg font-semibold'>
+                        <p className='text-base sm:text-lg font-semibold'>
                           {selectedCompany?.currentPrice
                             ? formatVolume(
                                 parseFloat(selectedCompany.currentPrice) * 1000
@@ -505,7 +491,7 @@ export default function Market() {
                       </div>
                     </div>
 
-                    <div className='grid grid-cols-2 gap-8'>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8'>
                       {/* Sell Orders */}
                       <div>
                         <h3 className='text-lg font-semibold text-red-600 mb-4 flex items-center'>
@@ -760,7 +746,7 @@ export default function Market() {
             </div>
 
             {/* Right Column - Trading Tools */}
-            <div className='space-y-8'>
+            <div className='space-y-4 sm:space-y-8'>
               {/* Place Order */}
               <Card>
                 <CardHeader>
@@ -769,13 +755,13 @@ export default function Market() {
                     Place Order
                   </CardTitle>
                 </CardHeader>
-                <CardContent className='space-y-4'>
+                <CardContent className='space-y-3 sm:space-y-4'>
                   {/* Buy/Sell Toggle */}
-                  <div className='flex space-x-2'>
+                  <div className='flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2'>
                     <Button
                       variant={orderType === 'buy' ? 'default' : 'outline'}
                       onClick={() => setOrderType('buy')}
-                      className={`flex-1 ${
+                      className={`flex-1 text-sm sm:text-base ${
                         orderType === 'buy'
                           ? 'bg-green-600 hover:bg-green-700 text-white'
                           : 'border-green-600 text-green-600 hover:bg-green-50'
@@ -787,7 +773,7 @@ export default function Market() {
                     <Button
                       variant={orderType === 'sell' ? 'default' : 'outline'}
                       onClick={() => setOrderType('sell')}
-                      className={`flex-1 ${
+                      className={`flex-1 text-sm sm:text-base ${
                         orderType === 'sell'
                           ? 'bg-red-600 hover:bg-red-700 text-white'
                           : 'border-red-600 text-red-600 hover:bg-red-50'
@@ -959,6 +945,7 @@ export default function Market() {
           </div>
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }

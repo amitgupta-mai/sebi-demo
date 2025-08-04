@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Undo2, Calculator, AlertCircle } from 'lucide-react';
 import { DataLoading } from '@/components/LoadingSpinner';
+import MobileNav from '@/components/MobileNav';
 
 export default function Convert() {
   const { toast } = useToast();
@@ -173,7 +174,7 @@ export default function Convert() {
       <div className='flex'>
         <Sidebar />
 
-        <main className='flex-1 p-6'>
+        <main className='flex-1 p-4 sm:p-6 pb-20 lg:pb-6'>
           <div className='max-w-2xl mx-auto'>
             <div className='mb-8'>
               <h1 className='text-3xl font-bold text-gray-900 mb-2'>
@@ -365,6 +366,7 @@ export default function Convert() {
           </div>
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }
