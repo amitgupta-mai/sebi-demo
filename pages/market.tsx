@@ -118,7 +118,7 @@ export default function Market() {
       statistics: any;
     };
   }>({
-    queryKey: ['/api/tokens/orders'],
+    queryKey: [`/api/tokens/orders?companyId=${selectedCompanyId}`],
   });
 
   // Place order mutation
@@ -155,7 +155,7 @@ export default function Market() {
 
       // Invalidate queries
       queryClient.invalidateQueries({
-        queryKey: ['/api/tokens/orders'],
+        queryKey: [`/api/tokens/orders?companyId=${selectedCompanyId}`],
       });
       queryClient.invalidateQueries({
         queryKey: ['/api/market/trades', selectedCompanyId],
@@ -344,7 +344,9 @@ export default function Market() {
     (order: any) => order.orderType === 'buy' && order.status === 'pending'
   );
   const sellOrders = companyOrders.filter(
-    (order: any) => order.orderType === 'sell' && order.status === 'pending'
+    (order: any) =>
+      order.orderType === 'sell' &&
+      (order.status === 'pending' || order.status === 'partially_filled')
   );
 
   // Sort orders by price (buy orders descending, sell orders ascending)
@@ -411,9 +413,9 @@ export default function Market() {
                                     {company?.name} ({company?.symbol})
                                   </span>
                                 </div>
-                                <span className='text-xs text-green-600 font-medium ml-1'>
+                                {/* <span className='text-xs text-green-600 font-medium ml-1'>
                                   {availableQuantity} available
-                                </span>
+                                </span> */}
                               </div>
                             </SelectItem>
                           );
@@ -510,7 +512,9 @@ export default function Market() {
                       <div className='text-2xl font-bold text-blue-600'>
                         Current Price: ₹
                         {selectedCompany?.currentPrice
-                          ? parseFloat(selectedCompany.currentPrice).toFixed(2)
+                          ? (
+                              parseFloat(selectedCompany.currentPrice) / 10
+                            ).toFixed(2)
                           : '0.00'}
                       </div>
                     </div>
@@ -525,7 +529,7 @@ export default function Market() {
                         <div className='space-y-3'>
                           <div className='grid grid-cols-3 gap-4 text-sm font-medium text-gray-600 pb-3 border-b'>
                             <span>Price</span>
-                            <span>Amount</span>
+                            <span>Tokens</span>
                             <span>Total</span>
                           </div>
                           {sellOrders.length > 0 ? (
@@ -563,7 +567,7 @@ export default function Market() {
                         <div className='space-y-3'>
                           <div className='grid grid-cols-3 gap-4 text-sm font-medium text-gray-600 pb-3 border-b'>
                             <span>Price</span>
-                            <span>Amount</span>
+                            <span>Tokens</span>
                             <span>Total</span>
                           </div>
                           {buyOrders.length > 0 ? (
@@ -648,7 +652,15 @@ export default function Market() {
                               <div className='text-right flex items-center space-x-2'>
                                 <Badge
                                   variant='secondary'
-                                  className='bg-green-100 text-green-700'
+                                  className={
+                                    order.status === 'pending'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : order.status === 'filled'
+                                      ? 'bg-green-100 text-green-700'
+                                      : order.status === 'partially_filled'
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : ''
+                                  }
                                 >
                                   {order.status}
                                 </Badge>
@@ -721,7 +733,12 @@ export default function Market() {
                                   ₹{formatNumber(order.filledAmount)}
                                 </div>
                                 <div className='text-xs text-gray-500'>
-                                  Filled
+                                  <Badge
+                                    variant='secondary'
+                                    className='bg-green-100 text-green-700'
+                                  >
+                                    {order.status}
+                                  </Badge>
                                 </div>
                               </div>
                             </div>
@@ -848,14 +865,22 @@ export default function Market() {
                     </Button>
                   </div>
 
-                  {/* Available Balance */}
+                  {/* Available Balance/Tokens */}
                   <div className='bg-blue-50 p-3 rounded-lg'>
                     <div className='flex justify-between items-center'>
                       <span className='text-sm text-gray-600'>
-                        Available Balance:
+                        {orderType === 'sell'
+                          ? 'Available Tokens:'
+                          : 'Available Balance:'}
                       </span>
                       <span className='text-lg font-semibold text-blue-600'>
-                        {walletLoading ? (
+                        {orderType === 'sell' ? (
+                          selectedCompanyId ? (
+                            `${getAvailableTokens(selectedCompanyId)} tokens`
+                          ) : (
+                            0
+                          )
+                        ) : walletLoading ? (
                           <span className='text-sm text-gray-500'>
                             Loading...
                           </span>
@@ -962,7 +987,7 @@ export default function Market() {
               </Card>
 
               {/* Market Trades */}
-              {selectedCompany && (
+              {/* {selectedCompany && (
                 <Card>
                   <CardHeader>
                     <CardTitle className='flex items-center '>
@@ -1004,7 +1029,7 @@ export default function Market() {
                     </div>
                   </CardContent>
                 </Card>
-              )}
+              )} */}
             </div>
           </div>
         </main>

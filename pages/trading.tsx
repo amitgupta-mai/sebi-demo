@@ -74,7 +74,12 @@ export default function Trading() {
       statistics: any;
     };
   }>({
-    queryKey: ['/api/tokens/orders'],
+    queryKey: [
+      `/api/tokens/orders${
+        selectedCompanyId ? `?companyId=${selectedCompanyId}` : ''
+      }`,
+      selectedCompanyId,
+    ],
   });
 
   const { data: portfolioSummaryResponse, isLoading: balanceLoading } =
@@ -427,9 +432,9 @@ export default function Trading() {
                                       )}
                                     </span>
                                   </div>
-                                  <span className='text-xs text-green-600 font-medium'>
+                                  {/* <span className='text-xs text-green-600 font-medium'>
                                     {availableQuantity} available
-                                  </span>
+                                  </span> */}
                                 </div>
                               </SelectItem>
                             );
