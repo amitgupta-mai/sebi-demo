@@ -74,12 +74,8 @@ export default function Trading() {
       statistics: any;
     };
   }>({
-    queryKey: [
-      `/api/tokens/orders${
-        selectedCompanyId ? `?companyId=${selectedCompanyId}` : ''
-      }`,
-      selectedCompanyId,
-    ],
+    queryKey: [`/api/tokens/orders${user?.id ? `?userId=${user?.id}` : ''}`],
+    enabled: !!user?.id,
   });
 
   const { data: portfolioSummaryResponse, isLoading: balanceLoading } =
@@ -318,13 +314,24 @@ export default function Trading() {
       return;
     }
 
-    orderMutation.mutate({
-      companyId: selectedCompanyId,
-      quantity: quantityNum,
-      orderType: orderType,
-      pricePerToken: priceNum,
-      executionType: orderTypeSelect,
-    });
+    orderMutation.mutate(
+      {
+        companyId: selectedCompanyId,
+        quantity: quantityNum,
+        orderType: orderType,
+        pricePerToken: priceNum,
+        executionType: orderTypeSelect,
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: [
+              `/api/tokens/orders${user?.id ? `?userId=${user?.id}` : ''}`,
+            ],
+          });
+        },
+      }
+    );
   };
 
   return (
@@ -798,8 +805,7 @@ export default function Trading() {
                                 {order?.orderType?.toUpperCase()}
                               </p>
                               <p className='text-sm text-gray-600'>
-                                {order?.remainingQuantity} @ ₹
-                                {order?.pricePerUnit}
+                                {order?.quantity} @ ₹{order?.pricePerUnit}
                               </p>
                             </div>
                           </div>
