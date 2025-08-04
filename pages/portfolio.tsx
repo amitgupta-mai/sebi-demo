@@ -265,7 +265,7 @@ export default function Portfolio() {
                   <div>
                     <div className='flex justify-between items-center mb-2'>
                       <span className='text-sm font-medium text-gray-700'>
-                        Real Shares
+                        Shares
                       </span>
                       <span className='text-sm text-gray-600'>
                         {formatCurrency(
@@ -399,7 +399,7 @@ export default function Portfolio() {
                               {holding.type === 'share' ? (
                                 <>
                                   <Tag className='mr-1 h-3 w-3' />
-                                  Real Share
+                                  Share
                                 </>
                               ) : (
                                 <>

@@ -90,6 +90,7 @@ export default function HoldingsTable({
         name: holding.companyName || holding.company?.name,
         symbol: holding.companySymbol || holding.company?.symbol,
         currentPrice: holding.currentPrice || holding.company?.currentPrice,
+        isinCode: holding?.isinCode || holding.company?.isinCode,
       },
       currentValue: (() => {
         const basePrice = parseFloat(
@@ -163,7 +164,7 @@ export default function HoldingsTable({
                 size='sm'
                 onClick={() => setFilter('shares')}
               >
-                Real Shares
+                Shares
               </Button>
               <Button
                 variant={filter === 'tokens' ? 'default' : 'outline'}
@@ -225,6 +226,9 @@ export default function HoldingsTable({
                             <div className='text-xs sm:text-sm text-gray-500 hidden sm:block'>
                               NSE: {item.company?.symbol || 'N/A'}
                             </div>
+                            <div className='text-xs sm:text-sm text-gray-500 hidden sm:block'>
+                              {item.company?.isinCode || 'N/A'}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -242,7 +246,7 @@ export default function HoldingsTable({
                           {item.type === 'share' ? (
                             <>
                               <Tag className='mr-1 h-3 w-3' />
-                              Real Share
+                              Share
                             </>
                           ) : (
                             <>

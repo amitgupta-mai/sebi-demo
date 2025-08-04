@@ -288,31 +288,6 @@ export default function Tokenize() {
                               })}
                             </>
                           )}
-
-                          {/* Companies without shares - disabled */}
-                          {companiesWithoutShares.length > 0 && (
-                            <>
-                              <div className='px-2 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide'>
-                                Other companies
-                              </div>
-                              {companiesWithoutShares.map((company: any) => (
-                                <SelectItem
-                                  key={company.id}
-                                  value={company.id}
-                                  disabled
-                                >
-                                  <div className='flex items-center justify-between w-full opacity-50'>
-                                    <span>
-                                      {company.name} ({company.symbol})
-                                    </span>
-                                    <span className='text-xs text-gray-400'>
-                                      No shares
-                                    </span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </>
-                          )}
                         </>
                       ) : (
                         <SelectItem value='no-companies' disabled>

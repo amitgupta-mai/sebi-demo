@@ -266,7 +266,7 @@ export default function Wallet() {
           </div>
 
           {/* Stats Cards */}
-          <div className='grid grid-cols-1 md:grid-cols-4 gap-6 mb-8'>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
             <Card>
               <CardContent className='p-6'>
                 <div className='flex items-center space-x-4'>
@@ -336,7 +336,7 @@ export default function Wallet() {
             {/* Quick Actions */}
             <Card>
               <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+                <CardTitle>Manage Funds</CardTitle>
               </CardHeader>
               <CardContent className='space-y-4'>
                 <Dialog open={isAddFundOpen} onOpenChange={setIsAddFundOpen}>
@@ -442,7 +442,7 @@ export default function Wallet() {
             {/* Transaction History */}
             <Card className='lg:col-span-2'>
               <CardHeader>
-                <CardTitle>Transaction History</CardTitle>
+                <CardTitle>Wallet History</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className='space-y-4'>
@@ -453,9 +453,9 @@ export default function Wallet() {
                       {walletTransactions?.map((transaction: any) => (
                         <div
                           key={transaction.id}
-                          className='flex items-center justify-between p-4 border rounded-lg'
+                          className='flex items-center justify-between p-4 border rounded-lg mb-2'
                         >
-                          <div className='flex items-center space-x-4'>
+                          <div className='flex items-center space-x-4 mb-2'>
                             {getTransactionIcon(transaction.transactionType)}
                             <div>
                               <p className='font-medium'>
