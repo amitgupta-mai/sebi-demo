@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, ArrowLeftRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowLeftRight } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { DataLoading } from '@/components/LoadingSpinner';
 
@@ -28,6 +28,7 @@ export default function Trading() {
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
+  const [orderTypeSelect, setOrderTypeSelect] = useState<string>('limit');
 
   const { data: availableTokensResponse, isLoading: tokensLoading } = useQuery<{
     success: boolean;
@@ -104,6 +105,20 @@ export default function Trading() {
   const companies = allCompanies.filter((company) =>
     availableTokens.some((token) => token.companyId === company.id)
   );
+
+  // Auto-set price when market order is selected
+  useEffect(() => {
+    if (orderTypeSelect === 'market' && selectedCompanyId) {
+      const selectedCompany = companies.find(
+        (company) => company.id === selectedCompanyId
+      );
+      if (selectedCompany) {
+        // For market orders, use the current price divided by 10 (token ratio)
+        const marketPrice = parseFloat(selectedCompany.currentPrice) / 10;
+        setPrice(marketPrice.toFixed(2));
+      }
+    }
+  }, [orderTypeSelect, selectedCompanyId, companies]);
 
   const ordersArray = ordersResponse?.data?.orders || [];
 
@@ -205,22 +220,8 @@ export default function Trading() {
     return new Intl.NumberFormat('en-IN').format(value);
   };
 
-  const formatPercentage = (value: number) => {
-    return `${value >= 0 ? '+' : ''}${value?.toFixed?.(2)}%`;
-  };
-
-  const safeParseNumber = (value: any): number => {
-    if (typeof value === 'number') return value;
-    if (!value || typeof value !== 'string') return 0;
-
-    // Remove any non-numeric characters except decimal point and minus
-    const cleaned = value.replace(/[^\d.-]/g, '');
-    const parsed = parseFloat(cleaned);
-    return isNaN(parsed) ? 0 : parsed;
-  };
-
   const getUserBalance = (): number => {
-    return safeParseNumber(portfolioSummaryResponse?.data?.cashBalance);
+    return parseFloat(portfolioSummaryResponse?.data?.cashBalance || '0');
   };
 
   const getAvailableQuantity = (companyId: string): number => {
@@ -234,10 +235,6 @@ export default function Trading() {
     );
   };
 
-  const getCompanyTokens = (companyId: string): any[] => {
-    return availableTokens.filter((t: any) => t.companyId === companyId);
-  };
-
   const getCompanyLogoClass = (symbol: string) => {
     const symbolLower = symbol.toLowerCase();
     if (symbolLower === 'tcs') return 'company-logo tcs';
@@ -249,7 +246,7 @@ export default function Trading() {
   };
 
   const handlePlaceOrder = () => {
-    if (!selectedCompanyId || !quantity) {
+    if (!selectedCompanyId || !quantity || !price) {
       toast({
         title: 'Error',
         description: 'Please fill all fields',
@@ -259,11 +256,12 @@ export default function Trading() {
     }
 
     const quantityNum = parseInt(quantity);
+    const priceNum = parseFloat(price);
 
-    if (quantityNum <= 0) {
+    if (quantityNum <= 0 || priceNum <= 0) {
       toast({
         title: 'Error',
-        description: 'Invalid quantity',
+        description: 'Invalid quantity or price',
         variant: 'destructive',
       });
       return;
@@ -314,7 +312,7 @@ export default function Trading() {
       companyId: selectedCompanyId,
       quantity: quantityNum,
       orderType: orderType,
-      pricePerToken: parseFloat(selectedCompany.currentPrice),
+      pricePerToken: priceNum,
     });
   };
 
@@ -349,10 +347,26 @@ export default function Trading() {
                     }
                   >
                     <TabsList className='grid w-full grid-cols-2'>
-                      <TabsTrigger value='buy' className='text-green-600'>
+                      <TabsTrigger
+                        value='buy'
+                        className={`${
+                          orderType === 'buy'
+                            ? 'bg-green-600 text-white data-[state=active]:bg-green-700'
+                            : 'text-green-600'
+                        }`}
+                      >
+                        <TrendingUp className='w-4 h-4 mr-2' />
                         Buy
                       </TabsTrigger>
-                      <TabsTrigger value='sell' className='text-red-600'>
+                      <TabsTrigger
+                        value='sell'
+                        className={`${
+                          orderType === 'sell'
+                            ? 'bg-red-600 text-white data-[state=active]:bg-red-700'
+                            : 'text-red-600'
+                        }`}
+                      >
+                        <TrendingDown className='w-4 h-4 mr-2' />
                         Sell
                       </TabsTrigger>
                     </TabsList>
@@ -396,9 +410,17 @@ export default function Trading() {
                             return (
                               <SelectItem key={company?.id} value={company?.id}>
                                 <div className='flex items-center justify-between w-full'>
-                                  <span>
-                                    {company?.name} ({company?.symbol})
-                                  </span>
+                                  <div className='flex flex-col'>
+                                    <span>
+                                      {company?.name} ({company?.symbol})
+                                    </span>
+                                    <span className='text-xs text-gray-500'>
+                                      ₹
+                                      {formatCurrency(
+                                        parseFloat(company?.currentPrice || 0)
+                                      )}
+                                    </span>
+                                  </div>
                                   <span className='text-xs text-green-600 font-medium'>
                                     {availableQuantity} available
                                   </span>
@@ -413,6 +435,31 @@ export default function Trading() {
                         )}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Order Type */}
+                  <div>
+                    <Label
+                      htmlFor='orderType'
+                      className='text-sm font-medium text-gray-700 mb-2 block'
+                    >
+                      Order Type
+                    </Label>
+                    <Select
+                      value={orderTypeSelect}
+                      onValueChange={setOrderTypeSelect}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='limit'>Limit Order</SelectItem>
+                        <SelectItem value='market'>Market Order</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className='text-xs text-gray-500 mt-1'>
+                      Execute only at your specified price or better
+                    </p>
                   </div>
 
                   <div>
@@ -452,18 +499,7 @@ export default function Trading() {
                           Maximum available:{' '}
                           {getAvailableQuantity(selectedCompanyId)} tokens
                         </p>
-                        {(() => {
-                          const companyTokens =
-                            getCompanyTokens(selectedCompanyId);
-                          if (companyTokens.length > 1) {
-                            return (
-                              <p className='text-blue-600 mt-1'>
-                                From {companyTokens.length} token batches
-                              </p>
-                            );
-                          }
-                          return null;
-                        })()}
+
                         {quantity &&
                           (() => {
                             const quantityNum = parseInt(quantity);
@@ -503,21 +539,49 @@ export default function Trading() {
                     )}
                   </div>
 
+                  {/* Price per Token */}
+                  <div>
+                    <Label
+                      htmlFor='price'
+                      className='text-sm font-medium text-gray-700 mb-2 block'
+                    >
+                      Price per Token
+                      {orderTypeSelect === 'market' && (
+                        <span className='text-xs text-gray-500 ml-1'>
+                          (Auto-set for market order)
+                        </span>
+                      )}
+                    </Label>
+                    <Input
+                      id='price'
+                      type='number'
+                      placeholder={
+                        orderTypeSelect === 'market'
+                          ? 'Market price (auto-set)'
+                          : 'Enter limit price'
+                      }
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      min='0.01'
+                      step='0.01'
+                      disabled={orderTypeSelect === 'market'}
+                      className={
+                        orderTypeSelect === 'market'
+                          ? 'bg-gray-100 cursor-not-allowed'
+                          : ''
+                      }
+                    />
+                  </div>
+
                   {/* Cost Preview for Buy Orders */}
                   {orderType === 'buy' &&
                     selectedCompanyId &&
                     quantity &&
+                    price &&
                     (() => {
-                      const selectedCompany = companies.find(
-                        (company) => company.id === selectedCompanyId
-                      );
-                      if (!selectedCompany) return null;
-
                       const quantityNum = parseInt(quantity);
-                      const pricePerToken = parseFloat(
-                        selectedCompany.currentPrice
-                      );
-                      const totalCost = (quantityNum * pricePerToken) / 10;
+                      const priceNum = parseFloat(price);
+                      const totalCost = quantityNum * priceNum;
                       const userBalance = getUserBalance();
                       const hasInsufficientBalance = totalCost > userBalance;
 
@@ -535,7 +599,7 @@ export default function Trading() {
                                 Price per token:
                               </span>
                               <span className='font-medium'>
-                                {formatCurrency(pricePerToken / 10)}
+                                {formatCurrency(priceNum)}
                               </span>
                             </div>
                             <div className='flex justify-between'>
@@ -571,6 +635,7 @@ export default function Trading() {
                     disabled={
                       !selectedCompanyId ||
                       !quantity ||
+                      !price ||
                       orderMutation.isPending ||
                       (() => {
                         const quantityNum = parseInt(quantity);
@@ -582,14 +647,8 @@ export default function Trading() {
 
                         // Check balance for buy orders
                         if (orderType === 'buy') {
-                          const selectedCompany = companies.find(
-                            (company) => company.id === selectedCompanyId
-                          );
-                          if (!selectedCompany) return true;
-                          const pricePerToken = parseFloat(
-                            selectedCompany.currentPrice
-                          );
-                          const totalCost = quantityNum * pricePerToken;
+                          const priceNum = parseFloat(price);
+                          const totalCost = quantityNum * priceNum;
                           const userBalance = getUserBalance();
                           return totalCost > userBalance;
                         }
@@ -600,7 +659,7 @@ export default function Trading() {
                   >
                     {orderMutation.isPending
                       ? 'Placing Order...'
-                      : `Place ${orderType.toUpperCase()} Order`}
+                      : `Place ${orderTypeSelect} ${orderType} Order`}
                   </Button>
                 </CardContent>
               </Card>

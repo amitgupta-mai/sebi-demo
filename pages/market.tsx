@@ -100,6 +100,38 @@ export default function Market() {
     queryKey: ['/api/tokens/available'],
   });
 
+  // Fetch available market tokens for buy orders
+  const {
+    data: availableMarketTokensResponse,
+    isLoading: marketTokensLoading,
+  } = useQuery<{
+    success: boolean;
+    message: string;
+    data: {
+      orders: any[];
+    };
+  }>({
+    queryKey: ['/api/transactions/available-tokens'],
+  });
+
+  // Fetch wallet balance
+  const { data: walletResponse, isLoading: walletLoading } = useQuery<{
+    success: boolean;
+    message: string;
+    data: {
+      id: string;
+      userId: string;
+      balance: number;
+      totalAdded: number;
+      totalWithdrawn: number;
+      totalBalance: number;
+      createdAt: string;
+      updatedAt: string;
+    };
+  }>({
+    queryKey: ['/api/wallet'],
+  });
+
   // Fetch user orders
   const { data: ordersResponse, isLoading: ordersLoading } = useQuery<{
     success: boolean;
@@ -265,7 +297,35 @@ export default function Market() {
     );
   };
 
-  const companies = companiesResponse?.data?.companies || [];
+  const getUserBalance = (): number => {
+    return walletResponse?.data?.balance || 0;
+  };
+
+  // Extract available tokens from API response based on selected tab
+  const availableTokens =
+    orderType === 'buy'
+      ? availableMarketTokensResponse?.data?.orders || []
+      : availableTokensResponse?.data?.tokens || [];
+  const allCompanies = companiesResponse?.data?.companies || [];
+
+  // Extract unique companies that have available tokens
+  const companies = allCompanies.filter((company) =>
+    availableTokens.some((token) => token.companyId === company.id)
+  );
+
+  // Auto-set price when market order is selected
+  useEffect(() => {
+    if (orderTypeSelect === 'market' && selectedCompanyId) {
+      const selectedCompany = companies.find(
+        (c: any) => c.id === selectedCompanyId
+      );
+      if (selectedCompany) {
+        // For market orders, use the current price divided by 10 (token ratio)
+        const marketPrice = parseFloat(selectedCompany.currentPrice) / 10;
+        setPrice(marketPrice.toFixed(2));
+      }
+    }
+  }, [orderTypeSelect, selectedCompanyId, companies]);
   const selectedCompany = companies.find(
     (c: any) => c.id === selectedCompanyId
   );
@@ -273,108 +333,19 @@ export default function Market() {
   const orderBook = orderBookResponse?.data;
   const marketTrades = marketTradesResponse?.data?.trades || [];
 
-  // Generate mock data for demonstration - exact match to screenshot
-  const mockOrderBook = {
-    buyOrders: [
-      { price: 3444.6, amount: 100, total: 344460.0 },
-      { price: 3437.4, amount: 472, total: 1622452.8 },
-      { price: 3387.55, amount: 479, total: 1622636.45 },
-      { price: 3339.76, amount: 88, total: 293898.88 },
-      { price: 3313.81, amount: 364, total: 1206226.84 },
-    ],
-    sellOrders: [
-      { price: 3469.0, amount: 302, total: 1047638.0 },
-      { price: 3501.38, amount: 261, total: 913860.18 },
-      { price: 3585.8, amount: 358, total: 1283716.4 },
-      { price: 3588.77, amount: 191, total: 685455.07 },
-      { price: 3616.94, amount: 85, total: 307439.9 },
-    ],
-    currentPrice: 3456.8,
-  };
-
-  const mockMarketTrades = [
-    { price: 1667.64, amount: 578, time: '11:25:52 am', isGreen: true },
-    { price: 1680.04, amount: 341, time: '11:17:54 am', isGreen: false },
-    { price: 1692.7, amount: 553, time: '11:16:57 am', isGreen: true },
-    { price: 1674.62, amount: 37, time: '11:16:45 am', isGreen: false },
-    { price: 1688.32, amount: 654, time: '11:15:49 am', isGreen: false },
-    { price: 1686.76, amount: 432, time: '11:15:48 am', isGreen: false },
-    { price: 1681.16, amount: 524, time: '11:15:30 am', isGreen: true },
-    { price: 1686.97, amount: 70, time: '11:15:24 am', isGreen: true },
-  ];
-
   // Get real orders from API response
   const realOrders = ordersResponse?.data?.orders || [];
+
+  // Filter orders based on status for different tabs
   const openOrders = realOrders.filter(
-    (order: any) =>
-      order.status === 'pending' || order.status === 'partially_filled'
+    (order: any) => order.status === 'pending'
   );
 
-  // Mock trade history data
-  const mockTradeHistory = [
-    {
-      id: '1',
-      company: 'ICICIBANK',
-      type: 'SELL',
-      quantity: 209,
-      price: 975.1,
-      time: '09:52:26 am',
-      total: 203795.9,
-    },
-    {
-      id: '2',
-      company: 'ICICIBANK',
-      type: 'BUY',
-      quantity: 120,
-      price: 910.27,
-      time: '09:52:26 am',
-      total: 109232.4,
-    },
-    {
-      id: '3',
-      company: 'ICICIBANK',
-      type: 'BUY',
-      quantity: 175,
-      price: 903.25,
-      time: '09:52:26 am',
-      total: 158068.75,
-    },
-    {
-      id: '4',
-      company: 'HDFCBANK',
-      type: 'BUY',
-      quantity: 48,
-      price: 1628.78,
-      time: '09:52:26 am',
-      total: 78181.44,
-    },
-    {
-      id: '5',
-      company: 'TCS',
-      type: 'SELL',
-      quantity: 95,
-      price: 3456.8,
-      time: '09:51:15 am',
-      total: 328396.0,
-    },
-    {
-      id: '6',
-      company: 'RELIANCE',
-      type: 'BUY',
-      quantity: 75,
-      price: 2500.0,
-      time: '09:50:30 am',
-      total: 187500.0,
-    },
-  ];
+  const orderHistory = realOrders; // All orders for order history
 
-  const mockMarketData = {
-    lastPrice: 3456.8,
-    change: 1.09,
-    high: 3620.54,
-    low: 3387.5,
-    volume: 1315932.763,
-  };
+  const tradeHistory = realOrders.filter(
+    (order: any) => order.status === 'filled'
+  );
 
   return (
     <div className='min-h-screen bg-gray-50'>
@@ -411,16 +382,32 @@ export default function Market() {
                       <SelectValue placeholder='Choose a company' />
                     </SelectTrigger>
                     <SelectContent>
-                      {companiesLoading ? (
+                      {tokensLoading ||
+                      marketTokensLoading ||
+                      companiesLoading ? (
                         <SelectItem value='loading' disabled>
                           <DataLoading text='Loading companies...' />
                         </SelectItem>
-                      ) : companies.length > 0 ? (
-                        companies.map((company: any) => (
-                          <SelectItem key={company.id} value={company.id}>
-                            {company.name} ({company.symbol})
-                          </SelectItem>
-                        ))
+                      ) : companies && companies.length > 0 ? (
+                        companies.map((company: any) => {
+                          const availableQuantity = getAvailableTokens(
+                            company.id
+                          );
+                          return (
+                            <SelectItem key={company?.id} value={company?.id}>
+                              <div className='flex items-center justify-between w-full'>
+                                <div className='flex flex-col'>
+                                  <span>
+                                    {company?.name} ({company?.symbol})
+                                  </span>
+                                </div>
+                                <span className='text-xs text-green-600 font-medium ml-1'>
+                                  {availableQuantity} available
+                                </span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })
                       ) : (
                         <SelectItem value='no-companies' disabled>
                           No companies available
@@ -445,7 +432,12 @@ export default function Market() {
                       <div>
                         <p className='text-sm text-gray-600'>Last Price</p>
                         <p className='text-lg font-semibold'>
-                          ₹{mockMarketData.lastPrice.toFixed(2)}
+                          ₹
+                          {selectedCompany?.currentPrice
+                            ? parseFloat(selectedCompany.currentPrice).toFixed(
+                                2
+                              )
+                            : '0.00'}
                         </p>
                       </div>
                       <div>
@@ -453,26 +445,40 @@ export default function Market() {
                         <div className='flex items-center space-x-1'>
                           <TrendingUp className='h-4 w-4 text-green-600' />
                           <span className='text-green-600 font-semibold'>
-                            +{mockMarketData.change}%
+                            +2.5%
                           </span>
                         </div>
                       </div>
                       <div>
                         <p className='text-sm text-gray-600'>24h High</p>
                         <p className='text-lg font-semibold'>
-                          ₹{mockMarketData.high.toFixed(2)}
+                          ₹
+                          {selectedCompany?.currentPrice
+                            ? (
+                                parseFloat(selectedCompany.currentPrice) * 1.05
+                              ).toFixed(2)
+                            : '0.00'}
                         </p>
                       </div>
                       <div>
                         <p className='text-sm text-gray-600'>24h Low</p>
                         <p className='text-lg font-semibold'>
-                          ₹{mockMarketData.low.toFixed(2)}
+                          ₹
+                          {selectedCompany?.currentPrice
+                            ? (
+                                parseFloat(selectedCompany.currentPrice) * 0.95
+                              ).toFixed(2)
+                            : '0.00'}
                         </p>
                       </div>
                       <div>
                         <p className='text-sm text-gray-600'>24h Volume</p>
                         <p className='text-lg font-semibold'>
-                          {formatVolume(mockMarketData.volume)}
+                          {selectedCompany?.currentPrice
+                            ? formatVolume(
+                                parseFloat(selectedCompany.currentPrice) * 1000
+                              )
+                            : '0'}
                         </p>
                       </div>
                     </div>
@@ -492,7 +498,10 @@ export default function Market() {
                   <CardContent>
                     <div className='text-center mb-6'>
                       <div className='text-2xl font-bold text-blue-600'>
-                        Current Price: ₹{mockOrderBook.currentPrice.toFixed(2)}
+                        Current Price: ₹
+                        {selectedCompany?.currentPrice
+                          ? parseFloat(selectedCompany.currentPrice).toFixed(2)
+                          : '0.00'}
                       </div>
                     </div>
 
@@ -509,18 +518,9 @@ export default function Market() {
                             <span>Amount</span>
                             <span>Total</span>
                           </div>
-                          {mockOrderBook.sellOrders.map((order, index) => (
-                            <div
-                              key={index}
-                              className='grid grid-cols-3 gap-4 text-sm py-2 bg-red-50 rounded'
-                            >
-                              <span className='text-red-600 font-medium'>
-                                ₹{order.price.toFixed(2)}
-                              </span>
-                              <span>{formatNumber(order.amount)}</span>
-                              <span>₹{formatNumber(order.total)}</span>
-                            </div>
-                          ))}
+                          <div className='text-center py-8 text-gray-500'>
+                            <p>No sell orders available</p>
+                          </div>
                         </div>
                       </div>
 
@@ -536,18 +536,9 @@ export default function Market() {
                             <span>Amount</span>
                             <span>Total</span>
                           </div>
-                          {mockOrderBook.buyOrders.map((order, index) => (
-                            <div
-                              key={index}
-                              className='grid grid-cols-3 gap-4 text-sm py-2 bg-green-50 rounded'
-                            >
-                              <span className='text-green-600 font-medium'>
-                                ₹{order.price.toFixed(2)}
-                              </span>
-                              <span>{formatNumber(order.amount)}</span>
-                              <span>₹{formatNumber(order.total)}</span>
-                            </div>
-                          ))}
+                          <div className='text-center py-8 text-gray-500'>
+                            <p>No buy orders available</p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -611,7 +602,7 @@ export default function Market() {
                                 >
                                   {order.status}
                                 </Badge>
-                                <Button
+                                {/* <Button
                                   size='sm'
                                   variant='outline'
                                   onClick={() =>
@@ -621,7 +612,7 @@ export default function Market() {
                                   className='text-red-600 hover:text-red-700'
                                 >
                                   Cancel
-                                </Button>
+                                </Button> */}
                               </div>
                             </div>
                           ))
@@ -635,52 +626,132 @@ export default function Market() {
 
                     <TabsContent value='trades' className='mt-4'>
                       <div className='space-y-3 max-h-64 overflow-y-auto'>
-                        {mockTradeHistory.map((trade) => (
-                          <div
-                            key={trade.id}
-                            className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
-                          >
-                            <div className='flex items-center space-x-3'>
-                              <div
-                                className={`p-1 rounded ${
-                                  trade.type === 'BUY'
-                                    ? 'bg-green-100 text-green-600'
-                                    : 'bg-red-100 text-red-600'
-                                }`}
-                              >
-                                {trade.type === 'BUY' ? (
-                                  <TrendingUp className='h-3 w-3' />
-                                ) : (
-                                  <TrendingDown className='h-3 w-3' />
-                                )}
-                              </div>
-                              <div>
-                                <div className='font-medium text-sm'>
-                                  {trade.company} - {trade.type}
+                        {ordersLoading ? (
+                          <div className='text-center py-8 text-gray-500'>
+                            <DataLoading text='Loading trades...' />
+                          </div>
+                        ) : tradeHistory.length > 0 ? (
+                          tradeHistory.map((order) => (
+                            <div
+                              key={order.id}
+                              className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
+                            >
+                              <div className='flex items-center space-x-3'>
+                                <div
+                                  className={`p-1 rounded ${
+                                    order.orderType === 'buy'
+                                      ? 'bg-green-100 text-green-600'
+                                      : 'bg-red-100 text-red-600'
+                                  }`}
+                                >
+                                  {order.orderType === 'buy' ? (
+                                    <TrendingUp className='h-3 w-3' />
+                                  ) : (
+                                    <TrendingDown className='h-3 w-3' />
+                                  )}
                                 </div>
-                                <div className='text-sm text-gray-600'>
-                                  {trade.quantity} @ ₹{trade.price.toFixed(2)}
+                                <div>
+                                  <div className='font-medium text-sm'>
+                                    {order.company?.name || 'Unknown'} -{' '}
+                                    {order.orderType?.toUpperCase()}
+                                  </div>
+                                  <div className='text-sm text-gray-600'>
+                                    {order.filledQuantity} @ ₹
+                                    {order.pricePerUnit}
+                                  </div>
+                                  <div className='text-xs text-gray-500'>
+                                    {new Date(
+                                      order.updatedAt
+                                    ).toLocaleTimeString()}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className='text-right'>
+                                <div className='font-semibold text-sm'>
+                                  ₹{formatNumber(order.filledAmount)}
                                 </div>
                                 <div className='text-xs text-gray-500'>
-                                  {trade.time}
+                                  Filled
                                 </div>
                               </div>
                             </div>
-                            <div className='text-right'>
-                              <div className='font-semibold text-sm'>
-                                ₹{formatNumber(trade.total)}
-                              </div>
-                              <div className='text-xs text-gray-500'>Total</div>
-                            </div>
+                          ))
+                        ) : (
+                          <div className='text-center py-8 text-gray-500'>
+                            <p>No trades found</p>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </TabsContent>
 
                     <TabsContent value='order-history' className='mt-4'>
-                      <div className='text-center py-8 text-gray-500'>
-                        <Clock className='h-8 w-8 mx-auto mb-2 text-gray-400' />
-                        <p>No order history</p>
+                      <div className='space-y-3 max-h-64 overflow-y-auto'>
+                        {ordersLoading ? (
+                          <div className='text-center py-8 text-gray-500'>
+                            <DataLoading text='Loading order history...' />
+                          </div>
+                        ) : orderHistory.length > 0 ? (
+                          orderHistory.map((order) => (
+                            <div
+                              key={order.id}
+                              className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
+                            >
+                              <div className='flex items-center space-x-3'>
+                                <div
+                                  className={`w-2 h-2 rounded-full ${
+                                    order.orderType === 'buy'
+                                      ? 'bg-green-500'
+                                      : 'bg-red-500'
+                                  }`}
+                                />
+                                <div>
+                                  <div className='font-medium text-sm'>
+                                    {order.company?.name || 'Unknown'} -{' '}
+                                    {order.orderType?.toUpperCase()}
+                                  </div>
+                                  <div className='text-sm text-gray-600'>
+                                    {order.quantity} @ ₹{order.pricePerUnit}
+                                  </div>
+                                  <div className='text-xs text-gray-500'>
+                                    {new Date(order.createdAt).toLocaleString()}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className='text-right flex items-center space-x-2'>
+                                <div>
+                                  <p className='font-medium text-sm'>
+                                    ₹{formatNumber(order.totalAmount)}
+                                  </p>
+                                  <Badge
+                                    variant={
+                                      order.status === 'filled'
+                                        ? 'default'
+                                        : order.status === 'partially_filled'
+                                        ? 'secondary'
+                                        : 'outline'
+                                    }
+                                    className={
+                                      order.status === 'pending'
+                                        ? 'bg-yellow-100 text-yellow-700'
+                                        : order.status === 'filled'
+                                        ? 'bg-green-100 text-green-700'
+                                        : order.status === 'partially_filled'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : ''
+                                    }
+                                  >
+                                    {order.status}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className='text-center py-8 text-gray-500'>
+                            <Clock className='h-8 w-8 mx-auto mb-2 text-gray-400' />
+                            <p>No order history</p>
+                          </div>
+                        )}
                       </div>
                     </TabsContent>
                   </Tabs>
@@ -704,15 +775,25 @@ export default function Market() {
                     <Button
                       variant={orderType === 'buy' ? 'default' : 'outline'}
                       onClick={() => setOrderType('buy')}
-                      className='flex-1 bg-green-600 hover:bg-green-700'
+                      className={`flex-1 ${
+                        orderType === 'buy'
+                          ? 'bg-green-600 hover:bg-green-700 text-white'
+                          : 'border-green-600 text-green-600 hover:bg-green-50'
+                      }`}
                     >
+                      <TrendingUp className='w-4 h-4 mr-2' />
                       Buy
                     </Button>
                     <Button
                       variant={orderType === 'sell' ? 'default' : 'outline'}
                       onClick={() => setOrderType('sell')}
-                      className='flex-1 bg-red-600 hover:bg-red-700'
+                      className={`flex-1 ${
+                        orderType === 'sell'
+                          ? 'bg-red-600 hover:bg-red-700 text-white'
+                          : 'border-red-600 text-red-600 hover:bg-red-50'
+                      }`}
                     >
+                      <TrendingDown className='w-4 h-4 mr-2' />
                       Sell
                     </Button>
                   </div>
@@ -724,7 +805,13 @@ export default function Market() {
                         Available Balance:
                       </span>
                       <span className='text-lg font-semibold text-blue-600'>
-                        ₹50,00,000
+                        {walletLoading ? (
+                          <span className='text-sm text-gray-500'>
+                            Loading...
+                          </span>
+                        ) : (
+                          formatCurrency(getUserBalance())
+                        )}
                       </span>
                     </div>
                   </div>
@@ -779,15 +866,30 @@ export default function Market() {
                       className='text-sm font-medium text-gray-700 mb-2 block'
                     >
                       Price per Token
+                      {orderTypeSelect === 'market' && (
+                        <span className='text-xs text-gray-500 ml-1'>
+                          (Auto-set for market order)
+                        </span>
+                      )}
                     </Label>
                     <Input
                       id='price'
                       type='number'
-                      placeholder='Enter limit price'
+                      placeholder={
+                        orderTypeSelect === 'market'
+                          ? 'Market price (auto-set)'
+                          : 'Enter limit price'
+                      }
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       min='0.01'
                       step='0.01'
+                      disabled={orderTypeSelect === 'market'}
+                      className={
+                        orderTypeSelect === 'market'
+                          ? 'bg-gray-100 cursor-not-allowed'
+                          : ''
+                      }
                     />
                   </div>
 
@@ -826,24 +928,28 @@ export default function Market() {
                         <span>Time</span>
                       </div>
                       <div className='max-h-64 overflow-y-auto justify-between'>
-                        {mockMarketTrades.map((trade, index) => (
-                          <div
-                            key={index}
-                            className='grid grid-cols-3 gap-4 text-sm py-2'
-                          >
-                            <span
-                              className={`font-medium ${
-                                trade.isGreen
-                                  ? 'text-green-600'
-                                  : 'text-red-600'
-                              }`}
+                        {marketTrades.length > 0 ? (
+                          marketTrades.map((trade: any, index: number) => (
+                            <div
+                              key={index}
+                              className='grid grid-cols-3 gap-4 text-sm py-2'
                             >
-                              ₹{trade.price.toFixed(2)}
-                            </span>
-                            <span>{formatNumber(trade.amount)}</span>
-                            <span className='text-gray-500'>{trade.time}</span>
+                              <span className='font-medium text-gray-600'>
+                                ₹{parseFloat(trade.price || 0).toFixed(2)}
+                              </span>
+                              <span>{formatNumber(trade.amount || 0)}</span>
+                              <span className='text-gray-500'>
+                                {new Date(
+                                  trade.timestamp || Date.now()
+                                ).toLocaleTimeString()}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className='text-center py-8 text-gray-500'>
+                            <p>No market trades available</p>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   </CardContent>
