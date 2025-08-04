@@ -100,6 +100,18 @@ export default function Market() {
     queryKey: ['/api/tokens/available'],
   });
 
+  // Fetch user orders
+  const { data: ordersResponse, isLoading: ordersLoading } = useQuery<{
+    success: boolean;
+    message: string;
+    data: {
+      orders: any[];
+      statistics: any;
+    };
+  }>({
+    queryKey: ['/api/tokens/orders'],
+  });
+
   // Place order mutation
   const createOrderMutation = useMutation({
     mutationFn: async (data: {
@@ -116,8 +128,7 @@ export default function Market() {
       return await apiRequest('POST', `${baseUrl}${endpoint}`, {
         companyId: data.companyId,
         quantity: data.quantity,
-        price: data.price,
-        orderType: data.orderTypeSelect,
+        pricePerToken: parseFloat(data.price),
       });
     },
     onSuccess: (data, variables) => {
@@ -140,12 +151,41 @@ export default function Market() {
         queryKey: ['/api/market/trades', selectedCompanyId],
       });
       queryClient.invalidateQueries({ queryKey: ['/api/tokens/available'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tokens/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/portfolio/overview'] });
     },
     onError: (error: any) => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to place order',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Cancel order mutation
+  const cancelOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const baseUrl =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      return await apiRequest(
+        'DELETE',
+        `${baseUrl}/api/tokens/orders/${orderId}`
+      );
+    },
+    onSuccess: (data, orderId) => {
+      toast({
+        title: 'Success',
+        description: 'Order cancelled successfully',
+      });
+
+      // Invalidate orders query
+      queryClient.invalidateQueries({ queryKey: ['/api/tokens/orders'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to cancel order',
         variant: 'destructive',
       });
     },
@@ -263,49 +303,12 @@ export default function Market() {
     { price: 1686.97, amount: 70, time: '11:15:24 am', isGreen: true },
   ];
 
-  // Mock open orders data
-  const mockOpenOrders = [
-    {
-      id: '1',
-      company: 'TCS',
-      type: 'SELL',
-      quantity: 302,
-      price: 3469.0,
-      status: 'Pending',
-    },
-    {
-      id: '2',
-      company: 'TCS',
-      type: 'SELL',
-      quantity: 261,
-      price: 3501.38,
-      status: 'Pending',
-    },
-    {
-      id: '3',
-      company: 'TCS',
-      type: 'BUY',
-      quantity: 88,
-      price: 3339.76,
-      status: 'Pending',
-    },
-    {
-      id: '4',
-      company: 'ICICIBANK',
-      type: 'SELL',
-      quantity: 285,
-      price: 966.04,
-      status: 'Pending',
-    },
-    {
-      id: '5',
-      company: 'ICICIBANK',
-      type: 'SELL',
-      quantity: 150,
-      price: 968.5,
-      status: 'Pending',
-    },
-  ];
+  // Get real orders from API response
+  const realOrders = ordersResponse?.data?.orders || [];
+  const openOrders = realOrders.filter(
+    (order: any) =>
+      order.status === 'pending' || order.status === 'partially_filled'
+  );
 
   // Mock trade history data
   const mockTradeHistory = [
@@ -572,38 +575,61 @@ export default function Market() {
 
                     <TabsContent value='open-orders' className='mt-4'>
                       <div className='space-y-3 max-h-64 overflow-y-auto'>
-                        {mockOpenOrders.map((order) => (
-                          <div
-                            key={order.id}
-                            className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
-                          >
-                            <div className='flex items-center space-x-3'>
-                              <div
-                                className={`w-2 h-2 rounded-full ${
-                                  order.type === 'BUY'
-                                    ? 'bg-green-500'
-                                    : 'bg-red-500'
-                                }`}
-                              />
-                              <div>
-                                <div className='font-medium text-sm'>
-                                  {order.company} - {order.type}
-                                </div>
-                                <div className='text-sm text-gray-600'>
-                                  {order.quantity} @ ₹{order.price.toFixed(2)}
+                        {ordersLoading ? (
+                          <div className='text-center py-8 text-gray-500'>
+                            <DataLoading text='Loading orders...' />
+                          </div>
+                        ) : openOrders.length > 0 ? (
+                          openOrders.map((order: any) => (
+                            <div
+                              key={order.id}
+                              className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
+                            >
+                              <div className='flex items-center space-x-3'>
+                                <div
+                                  className={`w-2 h-2 rounded-full ${
+                                    order.orderType === 'buy'
+                                      ? 'bg-green-500'
+                                      : 'bg-red-500'
+                                  }`}
+                                />
+                                <div>
+                                  <div className='font-medium text-sm'>
+                                    {order.company?.name || 'Unknown'} -{' '}
+                                    {order.orderType?.toUpperCase()}
+                                  </div>
+                                  <div className='text-sm text-gray-600'>
+                                    {order.remainingQuantity} @ ₹
+                                    {order.pricePerUnit}
+                                  </div>
                                 </div>
                               </div>
+                              <div className='text-right flex items-center space-x-2'>
+                                <Badge
+                                  variant='secondary'
+                                  className='bg-green-100 text-green-700'
+                                >
+                                  {order.status}
+                                </Badge>
+                                <Button
+                                  size='sm'
+                                  variant='outline'
+                                  onClick={() =>
+                                    cancelOrderMutation.mutate(order.id)
+                                  }
+                                  disabled={cancelOrderMutation.isPending}
+                                  className='text-red-600 hover:text-red-700'
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
                             </div>
-                            <div className='text-right'>
-                              <Badge
-                                variant='secondary'
-                                className='bg-green-100 text-green-700'
-                              >
-                                {order.status}
-                              </Badge>
-                            </div>
+                          ))
+                        ) : (
+                          <div className='text-center py-8 text-gray-500'>
+                            <p>No open orders</p>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </TabsContent>
 

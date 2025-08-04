@@ -284,22 +284,6 @@ export default function Dashboard() {
                                 transaction.createdAt
                               ).toLocaleDateString()}
                             </p>
-                            {(transaction as any).metadata?.transactionHash && (
-                              <div className='flex items-center text-xs text-blue-600 mt-1'>
-                                <ExternalLink className='h-3 w-3 mr-1' />
-                                <a
-                                  href={generateKalpScanUrl(
-                                    (transaction as any).metadata
-                                      .transactionHash
-                                  )}
-                                  target='_blank'
-                                  rel='noopener noreferrer'
-                                  className='hover:text-blue-800 hover:underline'
-                                >
-                                  View on KalpScan
-                                </a>
-                              </div>
-                            )}
                           </div>
                         </div>
                         <div className='text-right'>

@@ -62,9 +62,14 @@ export default function Trading() {
     queryKey: ['/api/market/companies'],
   });
 
-  const { data: orders = [], isLoading: ordersLoading } = useQuery<
-    any | { data: any }
-  >({
+  const { data: ordersResponse, isLoading: ordersLoading } = useQuery<{
+    success: boolean;
+    message: string;
+    data: {
+      orders: any[];
+      statistics: any;
+    };
+  }>({
     queryKey: ['/api/tokens/orders'],
   });
 
@@ -100,11 +105,7 @@ export default function Trading() {
     availableTokens.some((token) => token.companyId === company.id)
   );
 
-  const ordersArray = Array.isArray(orders)
-    ? orders
-    : orders?.data && Array.isArray(orders.data)
-    ? orders.data
-    : [];
+  const ordersArray = ordersResponse?.data?.orders || [];
 
   const queryClient = useQueryClient();
 
@@ -113,7 +114,7 @@ export default function Trading() {
       companyId: string;
       orderType: 'buy' | 'sell';
       quantity: number;
-      pricePerToken: string;
+      pricePerToken: number;
     }) => {
       const baseUrl =
         import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -163,6 +164,34 @@ export default function Trading() {
     },
   });
 
+  // Cancel order mutation
+  const cancelOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const baseUrl =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      return await apiRequest(
+        'DELETE',
+        `${baseUrl}/api/tokens/orders/${orderId}`
+      );
+    },
+    onSuccess: (data, orderId) => {
+      toast({
+        title: 'Success',
+        description: 'Order cancelled successfully',
+      });
+
+      // Invalidate orders query
+      queryClient.invalidateQueries({ queryKey: ['/api/tokens/orders'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to cancel order',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -170,6 +199,10 @@ export default function Trading() {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
+  };
+
+  const formatNumber = (value: number) => {
+    return new Intl.NumberFormat('en-IN').format(value);
   };
 
   const formatPercentage = (value: number) => {
@@ -281,7 +314,7 @@ export default function Trading() {
       companyId: selectedCompanyId,
       quantity: quantityNum,
       orderType: orderType,
-      pricePerToken: selectedCompany.currentPrice,
+      pricePerToken: parseFloat(selectedCompany.currentPrice),
     });
   };
 
@@ -681,27 +714,60 @@ export default function Trading() {
                           key={order?.id}
                           className='flex items-center justify-between p-4 bg-gray-50 rounded-lg'
                         >
-                          <div>
-                            <p className='font-medium'>
-                              {order?.company?.symbol}
-                            </p>
-                            <p className='text-sm text-gray-600'>
-                              {order?.orderType}
-                            </p>
+                          <div className='flex items-center space-x-3'>
+                            <div
+                              className={`w-2 h-2 rounded-full ${
+                                order.orderType === 'buy'
+                                  ? 'bg-green-500'
+                                  : 'bg-red-500'
+                              }`}
+                            />
+                            <div>
+                              <p className='font-medium'>
+                                {order?.company?.name || 'Unknown'} -{' '}
+                                {order?.orderType?.toUpperCase()}
+                              </p>
+                              <p className='text-sm text-gray-600'>
+                                {order?.remainingQuantity} @ ₹
+                                {order?.pricePerUnit}
+                              </p>
+                            </div>
                           </div>
-                          <div className='text-right'>
-                            <p className='font-medium'>
-                              {formatCurrency(order?.totalAmount || 0)}
-                            </p>
-                            <Badge
-                              variant={
-                                order?.status === 'completed'
-                                  ? 'default'
-                                  : 'secondary'
-                              }
-                            >
-                              {order?.status}
-                            </Badge>
+                          <div className='text-right flex items-center space-x-2'>
+                            <div>
+                              <p className='font-medium'>
+                                ₹{formatNumber(order?.totalAmount || 0)}
+                              </p>
+                              <Badge
+                                variant={
+                                  order?.status === 'filled'
+                                    ? 'default'
+                                    : 'secondary'
+                                }
+                                className={
+                                  order?.status === 'pending' ||
+                                  order?.status === 'partially_filled'
+                                    ? 'bg-green-100 text-green-700'
+                                    : ''
+                                }
+                              >
+                                {order?.status}
+                              </Badge>
+                            </div>
+                            {(order?.status === 'pending' ||
+                              order?.status === 'partially_filled') && (
+                              <Button
+                                size='sm'
+                                variant='outline'
+                                onClick={() =>
+                                  cancelOrderMutation.mutate(order.id)
+                                }
+                                disabled={cancelOrderMutation.isPending}
+                                className='text-red-600 hover:text-red-700'
+                              >
+                                Cancel
+                              </Button>
+                            )}
                           </div>
                         </div>
                       ))}

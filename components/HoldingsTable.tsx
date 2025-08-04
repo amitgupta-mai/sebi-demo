@@ -26,8 +26,8 @@ export default function HoldingsTable({
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -53,6 +53,24 @@ export default function HoldingsTable({
     return { pnl, pnlPercentage };
   };
 
+  const getDisplayPrice = (item: any) => {
+    const basePrice = parseFloat(
+      item.company?.currentPrice || item.currentPrice || 0
+    );
+
+    if (item.type === 'token' && item.tokenRatio) {
+      // Extract the ratio numbers (e.g., "1:10" -> 10)
+      const ratioMatch = item.tokenRatio.match(/(\d+):(\d+)/);
+      if (ratioMatch) {
+        const [, numerator, denominator] = ratioMatch;
+        const ratio = parseInt(denominator) / parseInt(numerator);
+        return basePrice / ratio;
+      }
+    }
+
+    return basePrice;
+  };
+
   const handleTokenize = (holding: any) => {
     setSelectedItem(holding);
     setTokenizeModalOpen(true);
@@ -67,36 +85,43 @@ export default function HoldingsTable({
   const allItems = [
     ...(holdings || []).map((holding) => ({
       ...holding,
-      type: 'share',
+      type: holding.type,
       company: {
         name: holding.companyName || holding.company?.name,
         symbol: holding.companySymbol || holding.company?.symbol,
         currentPrice: holding.currentPrice || holding.company?.currentPrice,
       },
-      currentValue:
-        parseFloat(holding.currentPrice || holding.company?.currentPrice || 0) *
-        holding.quantity,
+      currentValue: (() => {
+        const basePrice = parseFloat(
+          holding.currentPrice || holding.company?.currentPrice || 0
+        );
+        if (holding.type === 'token' && holding.tokenRatio) {
+          const ratioMatch = holding.tokenRatio.match(/(\d+):(\d+)/);
+          if (ratioMatch) {
+            const [, numerator, denominator] = ratioMatch;
+            const ratio = parseInt(denominator) / parseInt(numerator);
+            return (basePrice / ratio) * holding.quantity;
+          }
+        }
+        return basePrice * holding.quantity;
+      })(),
       ...calculatePnL(
-        parseFloat(holding.currentPrice || holding.company?.currentPrice || 0),
+        (() => {
+          const basePrice = parseFloat(
+            holding.currentPrice || holding.company?.currentPrice || 0
+          );
+          if (holding.type === 'token' && holding.tokenRatio) {
+            const ratioMatch = holding.tokenRatio.match(/(\d+):(\d+)/);
+            if (ratioMatch) {
+              const [, numerator, denominator] = ratioMatch;
+              const ratio = parseInt(denominator) / parseInt(numerator);
+              return basePrice / ratio;
+            }
+          }
+          return basePrice;
+        })(),
         parseFloat(holding.averagePrice || 0),
         holding.quantity
-      ),
-    })),
-    ...(tokenizedShares || []).map((token) => ({
-      ...token,
-      type: 'token',
-      company: {
-        name: token.companyName || token.company?.name,
-        symbol: token.companySymbol || token.company?.symbol,
-        currentPrice: token.currentPrice || token.company?.currentPrice,
-      },
-      currentValue:
-        parseFloat(token.currentPrice || token.company?.currentPrice || 0) *
-        token.quantity,
-      ...calculatePnL(
-        parseFloat(token.currentPrice || token.company?.currentPrice || 0),
-        parseFloat(token.averagePrice || 0),
-        token.quantity
       ),
     })),
   ];
@@ -225,9 +250,7 @@ export default function HoldingsTable({
                       </td>
                       <td className='text-sm text-gray-900'>{item.quantity}</td>
                       <td className='text-sm text-gray-900'>
-                        {formatCurrency(
-                          parseFloat(item.company?.currentPrice || 0)
-                        )}
+                        {formatCurrency(getDisplayPrice(item))}
                       </td>
                       <td className='text-sm text-gray-900'>
                         {formatCurrency(item.currentValue)}
