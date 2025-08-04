@@ -155,7 +155,7 @@ export default function Market() {
 
       // Invalidate queries
       queryClient.invalidateQueries({
-        queryKey: ['/api/market/orderbook', selectedCompanyId],
+        queryKey: ['/api/tokens/orders'],
       });
       queryClient.invalidateQueries({
         queryKey: ['/api/market/trades', selectedCompanyId],
@@ -331,6 +331,30 @@ export default function Market() {
 
   const marketTrades = tradeHistory;
 
+  // Extract order book data from orders response
+  const allOrders = ordersResponse?.data?.orders || [];
+
+  // Filter orders for selected company
+  const companyOrders = selectedCompanyId
+    ? allOrders.filter((order: any) => order.companyId === selectedCompanyId)
+    : [];
+
+  // Separate buy and sell orders
+  const buyOrders = companyOrders.filter(
+    (order: any) => order.orderType === 'buy' && order.status === 'pending'
+  );
+  const sellOrders = companyOrders.filter(
+    (order: any) => order.orderType === 'sell' && order.status === 'pending'
+  );
+
+  // Sort orders by price (buy orders descending, sell orders ascending)
+  buyOrders.sort(
+    (a: any, b: any) => parseFloat(b.pricePerUnit) - parseFloat(a.pricePerUnit)
+  );
+  sellOrders.sort(
+    (a: any, b: any) => parseFloat(a.pricePerUnit) - parseFloat(b.pricePerUnit)
+  );
+
   return (
     <div className='min-h-screen bg-gray-50'>
       <Header />
@@ -504,9 +528,29 @@ export default function Market() {
                             <span>Amount</span>
                             <span>Total</span>
                           </div>
-                          <div className='text-center py-8 text-gray-500'>
-                            <p>No sell orders available</p>
-                          </div>
+                          {sellOrders.length > 0 ? (
+                            sellOrders.map((order: any) => (
+                              <div
+                                key={order.id}
+                                className='grid grid-cols-3 gap-4 text-sm py-2 border-b border-gray-100'
+                              >
+                                <span className='text-red-600 font-medium'>
+                                  ₹{parseFloat(order.pricePerUnit).toFixed(2)}
+                                </span>
+                                <span>{order.remainingQuantity}</span>
+                                <span>
+                                  ₹
+                                  {formatNumber(
+                                    parseFloat(order.remainingAmount)
+                                  )}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <div className='text-center py-8 text-gray-500'>
+                              <p>No sell orders available</p>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -522,9 +566,29 @@ export default function Market() {
                             <span>Amount</span>
                             <span>Total</span>
                           </div>
-                          <div className='text-center py-8 text-gray-500'>
-                            <p>No buy orders available</p>
-                          </div>
+                          {buyOrders.length > 0 ? (
+                            buyOrders.map((order: any) => (
+                              <div
+                                key={order.id}
+                                className='grid grid-cols-3 gap-4 text-sm py-2 border-b border-gray-100'
+                              >
+                                <span className='text-green-600 font-medium'>
+                                  ₹{parseFloat(order.pricePerUnit).toFixed(2)}
+                                </span>
+                                <span>{order.remainingQuantity}</span>
+                                <span>
+                                  ₹
+                                  {formatNumber(
+                                    parseFloat(order.remainingAmount)
+                                  )}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <div className='text-center py-8 text-gray-500'>
+                              <p>No buy orders available</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
