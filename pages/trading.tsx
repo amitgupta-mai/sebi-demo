@@ -231,11 +231,19 @@ export default function Trading() {
   };
 
   const getAvailableQuantity = (companyId: string): number => {
-    const tokens = availableTokens.filter(
-      (t: any) => t.companyId === companyId
+    // Use different data sources based on order type
+    const tokens =
+      orderType === 'buy'
+        ? availableMarketTokensResponse?.data?.orders || []
+        : availableTokensResponse?.data?.tokens || [];
+
+    if (!tokens.length) return 0;
+
+    const companyTokens = tokens.filter(
+      (token: any) => token.companyId === companyId
     );
-    return tokens.reduce(
-      (total, token) =>
+    return companyTokens.reduce(
+      (total: number, token: any) =>
         total + (token.remainingQuantity || token.quantity || 0),
       0
     );
@@ -396,10 +404,18 @@ export default function Trading() {
                     <div className='bg-blue-50 p-3 rounded-lg'>
                       <div className='flex justify-between items-center'>
                         <span className='text-sm text-gray-600'>
-                          Available Balance
+                          {orderType === 'sell'
+                            ? 'Available Tokens:'
+                            : 'Available Balance'}
                         </span>
                         <span className='text-lg font-semibold text-blue-600'>
-                          {formatCurrency(getUserBalance())}
+                          {orderType === 'sell'
+                            ? selectedCompanyId
+                              ? `${getAvailableQuantity(
+                                  selectedCompanyId
+                                )} tokens`
+                              : '0 tokens'
+                            : formatCurrency(getUserBalance())}
                         </span>
                       </div>
                     </div>
@@ -439,9 +455,11 @@ export default function Trading() {
                                       )}
                                     </span>
                                   </div>
-                                  {/* <span className='text-xs text-green-600 font-medium'>
-                                    {availableQuantity} available
-                                  </span> */}
+                                  {orderType === 'sell' && (
+                                    <span className='text-xs text-green-600 font-medium'>
+                                      {availableQuantity} available
+                                    </span>
+                                  )}
                                 </div>
                               </SelectItem>
                             );

@@ -119,33 +119,12 @@ export default function Market() {
     };
   }>({
     queryKey: [
-      `/api/tokens/orders${user?.id ? `?userId=${user.id}` : ''}${
-        selectedCompanyId
-          ? `${user?.id ? '&' : '?'}companyId=${selectedCompanyId}`
-          : ''
+      `/api/tokens/orders${
+        selectedCompanyId ? `?companyId=${selectedCompanyId}` : ''
       }`,
     ],
-    enabled: !!user?.id,
+    enabled: !!selectedCompanyId,
   });
-
-  const { data: ordersForCompanyResponse, isLoading: ordersForCompanyLoading } =
-    useQuery<{
-      success: boolean;
-      message: string;
-      data: {
-        orders: any[];
-        statistics: any;
-      };
-    }>({
-      queryKey: [
-        `/api/tokens/orders${user?.id ? `?userId=${user.id}` : ''}${
-          selectedCompanyId
-            ? `${user?.id ? '&' : '?'}companyId=${selectedCompanyId}`
-            : ''
-        }`,
-      ],
-      enabled: !!user?.id,
-    });
 
   // Place order mutation
   const createOrderMutation = useMutation({
@@ -182,7 +161,7 @@ export default function Market() {
       // Invalidate queries
       queryClient.invalidateQueries({
         queryKey: [
-          `/api/tokens/orders${user?.id ? `?userId=${user.id}` : ''}${
+          `/api/tokens/orders${
             selectedCompanyId
               ? `${user?.id ? '&' : '?'}companyId=${selectedCompanyId}`
               : ''

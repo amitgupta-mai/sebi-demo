@@ -58,15 +58,15 @@ export default function HoldingsTable({
       item.company?.currentPrice || item.currentPrice || 0
     );
 
-    if (item.type === 'token' && item.tokenRatio) {
-      // Extract the ratio numbers (e.g., "1:10" -> 10)
-      const ratioMatch = item.tokenRatio.match(/(\d+):(\d+)/);
-      if (ratioMatch) {
-        const [, numerator, denominator] = ratioMatch;
-        const ratio = parseInt(denominator) / parseInt(numerator);
-        return basePrice / ratio;
-      }
-    }
+    // if (item.type === 'token' && item.tokenRatio) {
+    //   // Extract the ratio numbers (e.g., "1:10" -> 10)
+    //   const ratioMatch = item.tokenRatio.match(/(\d+):(\d+)/);
+    //   if (ratioMatch) {
+    //     const [, numerator, denominator] = ratioMatch;
+    //     const ratio = parseInt(denominator) / parseInt(numerator);
+    //     return basePrice / ratio;
+    //   }
+    // }
 
     return basePrice;
   };
