@@ -30,6 +30,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { DataLoading } from '@/components/LoadingSpinner';
+import MobileNav from '@/components/MobileNav';
 
 export default function Market() {
   const { toast } = useToast();
@@ -54,42 +55,18 @@ export default function Market() {
   });
 
   // Fetch market data for selected company
-  const { data: marketDataResponse, isLoading: marketLoading } = useQuery<{
-    success: boolean;
-    message: string;
-    data: any;
-  }>({
-    queryKey: ['/api/market/company', selectedCompanyId],
-    enabled: !!selectedCompanyId,
-  });
-
-  // Fetch order book for selected company
-  const { data: orderBookResponse, isLoading: orderBookLoading } = useQuery<{
-    success: boolean;
-    message: string;
-    data: {
-      buyOrders: any[];
-      sellOrders: any[];
-      currentPrice: string;
-    };
-  }>({
-    queryKey: ['/api/market/orderbook', selectedCompanyId],
-    enabled: !!selectedCompanyId,
-  });
+  // const { data: marketDataResponse, isLoading: marketLoading } = useQuery<{
+  //   success: boolean;
+  //   message: string;
+  //   data: any;
+  // }>({
+  //   queryKey: ['/api/market/company', selectedCompanyId],
+  //   enabled: !!selectedCompanyId,
+  // });
 
   // Fetch market trades for selected company
-  const { data: marketTradesResponse, isLoading: tradesLoading } = useQuery<{
-    success: boolean;
-    message: string;
-    data: {
-      trades: any[];
-    };
-  }>({
-    queryKey: ['/api/market/trades', selectedCompanyId],
-    enabled: !!selectedCompanyId,
-  });
 
-  // Fetch available tokens for user
+  // Fetch available tokens for user (for selling)
   const { data: availableTokensResponse, isLoading: tokensLoading } = useQuery<{
     success: boolean;
     message: string;
@@ -141,8 +118,34 @@ export default function Market() {
       statistics: any;
     };
   }>({
-    queryKey: ['/api/tokens/orders'],
+    queryKey: [
+      `/api/tokens/orders${user?.id ? `?userId=${user.id}` : ''}${
+        selectedCompanyId
+          ? `${user?.id ? '&' : '?'}companyId=${selectedCompanyId}`
+          : ''
+      }`,
+    ],
+    enabled: !!user?.id,
   });
+
+  const { data: ordersForCompanyResponse, isLoading: ordersForCompanyLoading } =
+    useQuery<{
+      success: boolean;
+      message: string;
+      data: {
+        orders: any[];
+        statistics: any;
+      };
+    }>({
+      queryKey: [
+        `/api/tokens/orders${user?.id ? `?userId=${user.id}` : ''}${
+          selectedCompanyId
+            ? `${user?.id ? '&' : '?'}companyId=${selectedCompanyId}`
+            : ''
+        }`,
+      ],
+      enabled: !!user?.id,
+    });
 
   // Place order mutation
   const createOrderMutation = useMutation({
@@ -161,6 +164,7 @@ export default function Market() {
         companyId: data.companyId,
         quantity: data.quantity,
         pricePerToken: parseFloat(data.price),
+        executionType: data.orderTypeSelect,
       });
     },
     onSuccess: (data, variables) => {
@@ -177,7 +181,13 @@ export default function Market() {
 
       // Invalidate queries
       queryClient.invalidateQueries({
-        queryKey: ['/api/market/orderbook', selectedCompanyId],
+        queryKey: [
+          `/api/tokens/orders${user?.id ? `?userId=${user.id}` : ''}${
+            selectedCompanyId
+              ? `${user?.id ? '&' : '?'}companyId=${selectedCompanyId}`
+              : ''
+          }`,
+        ],
       });
       queryClient.invalidateQueries({
         queryKey: ['/api/market/trades', selectedCompanyId],
@@ -286,11 +296,18 @@ export default function Market() {
   };
 
   const getAvailableTokens = (companyId: string): number => {
-    if (!availableTokensResponse?.data?.tokens) return 0;
-    const tokens = availableTokensResponse.data.tokens.filter(
+    // Use different data sources based on order type
+    const tokens =
+      orderType === 'buy'
+        ? availableMarketTokensResponse?.data?.orders || []
+        : availableTokensResponse?.data?.tokens || [];
+
+    if (!tokens.length) return 0;
+
+    const companyTokens = tokens.filter(
       (token: any) => token.companyId === companyId
     );
-    return tokens.reduce(
+    return companyTokens.reduce(
       (total: number, token: any) =>
         total + (token.remainingQuantity || token.quantity || 0),
       0
@@ -301,7 +318,7 @@ export default function Market() {
     return walletResponse?.data?.balance || 0;
   };
 
-  // Extract available tokens from API response based on selected tab
+  // Extract available tokens from API response based on order type
   const availableTokens =
     orderType === 'buy'
       ? availableMarketTokensResponse?.data?.orders || []
@@ -329,9 +346,6 @@ export default function Market() {
   const selectedCompany = companies.find(
     (c: any) => c.id === selectedCompanyId
   );
-  const marketData = marketDataResponse?.data;
-  const orderBook = orderBookResponse?.data;
-  const marketTrades = marketTradesResponse?.data?.trades || [];
 
   // Get real orders from API response
   const realOrders = ordersResponse?.data?.orders || [];
@@ -347,6 +361,34 @@ export default function Market() {
     (order: any) => order.status === 'filled'
   );
 
+  const marketTrades = tradeHistory;
+
+  // Extract order book data from orders response
+  const allOrders = ordersResponse?.data?.orders || [];
+
+  // Filter orders for selected company
+  const companyOrders = selectedCompanyId
+    ? allOrders.filter((order: any) => order.companyId === selectedCompanyId)
+    : [];
+
+  // Separate buy and sell orders
+  const buyOrders = companyOrders.filter(
+    (order: any) => order.orderType === 'buy' && order.status === 'pending'
+  );
+  const sellOrders = companyOrders.filter(
+    (order: any) =>
+      order.orderType === 'sell' &&
+      (order.status === 'pending' || order.status === 'partially_filled')
+  );
+
+  // Sort orders by price (buy orders descending, sell orders ascending)
+  buyOrders.sort(
+    (a: any, b: any) => parseFloat(b.pricePerUnit) - parseFloat(a.pricePerUnit)
+  );
+  sellOrders.sort(
+    (a: any, b: any) => parseFloat(a.pricePerUnit) - parseFloat(b.pricePerUnit)
+  );
+
   return (
     <div className='min-h-screen bg-gray-50'>
       <Header />
@@ -354,20 +396,22 @@ export default function Market() {
       <div className='flex'>
         <Sidebar />
 
-        <main className='flex-1 p-6'>
-          <div className='mb-8'>
-            <h1 className='text-3xl font-bold text-gray-900 mb-2'>Market</h1>
-            <p className='text-gray-600'>
+        <main className='flex-1 p-4 sm:p-6 pb-20 lg:pb-6'>
+          <div className='mb-6 sm:mb-8'>
+            <h1 className='text-2xl sm:text-3xl font-bold text-gray-900 mb-2'>
+              Market
+            </h1>
+            <p className='text-sm sm:text-base text-gray-600'>
               Trade Tokenized Shares - Real-time Order Book and Market Analysis
             </p>
           </div>
 
-          <div className='grid grid-cols-1 xl:grid-cols-3 gap-6'>
+          <div className='grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6'>
             {/* Left Column - Market Data */}
-            <div className='xl:col-span-2 space-y-6'>
+            <div className='lg:col-span-2 space-y-4 sm:space-y-6'>
               {/* Select Company */}
               <Card>
-                <CardContent className='p-6'>
+                <CardContent className='p-4 sm:p-6'>
                   <Label
                     htmlFor='company'
                     className='text-sm font-medium text-gray-700 mb-2 block'
@@ -401,9 +445,9 @@ export default function Market() {
                                     {company?.name} ({company?.symbol})
                                   </span>
                                 </div>
-                                <span className='text-xs text-green-600 font-medium ml-1'>
+                                {/* <span className='text-xs text-green-600 font-medium ml-1'>
                                   {availableQuantity} available
-                                </span>
+                                </span> */}
                               </div>
                             </SelectItem>
                           );
@@ -428,10 +472,10 @@ export default function Market() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className='grid grid-cols-2 md:grid-cols-5 gap-4'>
+                    <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4'>
                       <div>
                         <p className='text-sm text-gray-600'>Last Price</p>
-                        <p className='text-lg font-semibold'>
+                        <p className='text-base sm:text-lg font-semibold'>
                           ₹
                           {selectedCompany?.currentPrice
                             ? parseFloat(selectedCompany.currentPrice).toFixed(
@@ -451,7 +495,7 @@ export default function Market() {
                       </div>
                       <div>
                         <p className='text-sm text-gray-600'>24h High</p>
-                        <p className='text-lg font-semibold'>
+                        <p className='text-base sm:text-lg font-semibold'>
                           ₹
                           {selectedCompany?.currentPrice
                             ? (
@@ -462,7 +506,7 @@ export default function Market() {
                       </div>
                       <div>
                         <p className='text-sm text-gray-600'>24h Low</p>
-                        <p className='text-lg font-semibold'>
+                        <p className='text-base sm:text-lg font-semibold'>
                           ₹
                           {selectedCompany?.currentPrice
                             ? (
@@ -473,7 +517,7 @@ export default function Market() {
                       </div>
                       <div>
                         <p className='text-sm text-gray-600'>24h Volume</p>
-                        <p className='text-lg font-semibold'>
+                        <p className='text-base sm:text-lg font-semibold'>
                           {selectedCompany?.currentPrice
                             ? formatVolume(
                                 parseFloat(selectedCompany.currentPrice) * 1000
@@ -500,12 +544,14 @@ export default function Market() {
                       <div className='text-2xl font-bold text-blue-600'>
                         Current Price: ₹
                         {selectedCompany?.currentPrice
-                          ? parseFloat(selectedCompany.currentPrice).toFixed(2)
+                          ? (
+                              parseFloat(selectedCompany.currentPrice) / 10
+                            ).toFixed(2)
                           : '0.00'}
                       </div>
                     </div>
 
-                    <div className='grid grid-cols-2 gap-8'>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8'>
                       {/* Sell Orders */}
                       <div>
                         <h3 className='text-lg font-semibold text-red-600 mb-4 flex items-center'>
@@ -515,12 +561,32 @@ export default function Market() {
                         <div className='space-y-3'>
                           <div className='grid grid-cols-3 gap-4 text-sm font-medium text-gray-600 pb-3 border-b'>
                             <span>Price</span>
-                            <span>Amount</span>
+                            <span>Tokens</span>
                             <span>Total</span>
                           </div>
-                          <div className='text-center py-8 text-gray-500'>
-                            <p>No sell orders available</p>
-                          </div>
+                          {sellOrders.length > 0 ? (
+                            sellOrders.map((order: any) => (
+                              <div
+                                key={order.id}
+                                className='grid grid-cols-3 gap-4 text-sm py-2 border-b border-gray-100'
+                              >
+                                <span className='text-red-600 font-medium'>
+                                  ₹{parseFloat(order.pricePerUnit).toFixed(2)}
+                                </span>
+                                <span>{order.remainingQuantity}</span>
+                                <span>
+                                  ₹
+                                  {formatNumber(
+                                    parseFloat(order.remainingAmount)
+                                  )}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <div className='text-center py-8 text-gray-500'>
+                              <p>No sell orders available</p>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -533,12 +599,32 @@ export default function Market() {
                         <div className='space-y-3'>
                           <div className='grid grid-cols-3 gap-4 text-sm font-medium text-gray-600 pb-3 border-b'>
                             <span>Price</span>
-                            <span>Amount</span>
+                            <span>Tokens</span>
                             <span>Total</span>
                           </div>
-                          <div className='text-center py-8 text-gray-500'>
-                            <p>No buy orders available</p>
-                          </div>
+                          {buyOrders.length > 0 ? (
+                            buyOrders.map((order: any) => (
+                              <div
+                                key={order.id}
+                                className='grid grid-cols-3 gap-4 text-sm py-2 border-b border-gray-100'
+                              >
+                                <span className='text-green-600 font-medium'>
+                                  ₹{parseFloat(order.pricePerUnit).toFixed(2)}
+                                </span>
+                                <span>{order.remainingQuantity}</span>
+                                <span>
+                                  ₹
+                                  {formatNumber(
+                                    parseFloat(order.remainingAmount)
+                                  )}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <div className='text-center py-8 text-gray-500'>
+                              <p>No buy orders available</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -570,39 +656,51 @@ export default function Market() {
                           <div className='text-center py-8 text-gray-500'>
                             <DataLoading text='Loading orders...' />
                           </div>
-                        ) : openOrders.length > 0 ? (
-                          openOrders.map((order: any) => (
-                            <div
-                              key={order.id}
-                              className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
-                            >
-                              <div className='flex items-center space-x-3'>
-                                <div
-                                  className={`w-2 h-2 rounded-full ${
-                                    order.orderType === 'buy'
-                                      ? 'bg-green-500'
-                                      : 'bg-red-500'
-                                  }`}
-                                />
-                                <div>
-                                  <div className='font-medium text-sm'>
-                                    {order.company?.name || 'Unknown'} -{' '}
-                                    {order.orderType?.toUpperCase()}
-                                  </div>
-                                  <div className='text-sm text-gray-600'>
-                                    {order.remainingQuantity} @ ₹
-                                    {order.pricePerUnit}
+                        ) : openOrders.filter(
+                            (order: any) => order.userID === user?.id
+                          ).length > 0 ? (
+                          openOrders
+                            .filter((order: any) => order.userID === user?.id)
+                            .map((order: any) => (
+                              <div
+                                key={order.id}
+                                className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
+                              >
+                                <div className='flex items-center space-x-3'>
+                                  <div
+                                    className={`w-2 h-2 rounded-full ${
+                                      order.orderType === 'buy'
+                                        ? 'bg-green-500'
+                                        : 'bg-red-500'
+                                    }`}
+                                  />
+                                  <div>
+                                    <div className='font-medium text-sm'>
+                                      {order.company?.name || 'Unknown'} -{' '}
+                                      {order.orderType?.toUpperCase()}
+                                    </div>
+                                    <div className='text-sm text-gray-600'>
+                                      {order.remainingQuantity} @ ₹
+                                      {order.pricePerUnit}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              <div className='text-right flex items-center space-x-2'>
-                                <Badge
-                                  variant='secondary'
-                                  className='bg-green-100 text-green-700'
-                                >
-                                  {order.status}
-                                </Badge>
-                                {/* <Button
+                                <div className='text-right flex items-center space-x-2'>
+                                  <Badge
+                                    variant='secondary'
+                                    className={
+                                      order.status === 'pending'
+                                        ? 'bg-yellow-100 text-yellow-700'
+                                        : order.status === 'filled'
+                                        ? 'bg-green-100 text-green-700'
+                                        : order.status === 'partially_filled'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : ''
+                                    }
+                                  >
+                                    {order.status}
+                                  </Badge>
+                                  {/* <Button
                                   size='sm'
                                   variant='outline'
                                   onClick={() =>
@@ -613,9 +711,9 @@ export default function Market() {
                                 >
                                   Cancel
                                 </Button> */}
+                                </div>
                               </div>
-                            </div>
-                          ))
+                            ))
                         ) : (
                           <div className='text-center py-8 text-gray-500'>
                             <p>No open orders</p>
@@ -630,52 +728,61 @@ export default function Market() {
                           <div className='text-center py-8 text-gray-500'>
                             <DataLoading text='Loading trades...' />
                           </div>
-                        ) : tradeHistory.length > 0 ? (
-                          tradeHistory.map((order) => (
-                            <div
-                              key={order.id}
-                              className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
-                            >
-                              <div className='flex items-center space-x-3'>
-                                <div
-                                  className={`p-1 rounded ${
-                                    order.orderType === 'buy'
-                                      ? 'bg-green-100 text-green-600'
-                                      : 'bg-red-100 text-red-600'
-                                  }`}
-                                >
-                                  {order.orderType === 'buy' ? (
-                                    <TrendingUp className='h-3 w-3' />
-                                  ) : (
-                                    <TrendingDown className='h-3 w-3' />
-                                  )}
-                                </div>
-                                <div>
-                                  <div className='font-medium text-sm'>
-                                    {order.company?.name || 'Unknown'} -{' '}
-                                    {order.orderType?.toUpperCase()}
+                        ) : tradeHistory.filter(
+                            (order: any) => order.userID === user?.id
+                          ).length > 0 ? (
+                          tradeHistory
+                            .filter((order: any) => order.userID === user?.id)
+                            .map((order) => (
+                              <div
+                                key={order.id}
+                                className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
+                              >
+                                <div className='flex items-center space-x-3'>
+                                  <div
+                                    className={`p-1 rounded ${
+                                      order.orderType === 'buy'
+                                        ? 'bg-green-100 text-green-600'
+                                        : 'bg-red-100 text-red-600'
+                                    }`}
+                                  >
+                                    {order.orderType === 'buy' ? (
+                                      <TrendingUp className='h-3 w-3' />
+                                    ) : (
+                                      <TrendingDown className='h-3 w-3' />
+                                    )}
                                   </div>
-                                  <div className='text-sm text-gray-600'>
-                                    {order.filledQuantity} @ ₹
-                                    {order.pricePerUnit}
+                                  <div>
+                                    <div className='font-medium text-sm'>
+                                      {order.company?.name || 'Unknown'} -{' '}
+                                      {order.orderType?.toUpperCase()}
+                                    </div>
+                                    <div className='text-sm text-gray-600'>
+                                      {order.filledQuantity} @ ₹
+                                      {order.pricePerUnit}
+                                    </div>
+                                    <div className='text-xs text-gray-500'>
+                                      {new Date(
+                                        order.updatedAt
+                                      ).toLocaleTimeString()}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className='text-right'>
+                                  <div className='font-semibold text-sm'>
+                                    ₹{formatNumber(order.filledAmount)}
                                   </div>
                                   <div className='text-xs text-gray-500'>
-                                    {new Date(
-                                      order.updatedAt
-                                    ).toLocaleTimeString()}
+                                    <Badge
+                                      variant='secondary'
+                                      className='bg-green-100 text-green-700'
+                                    >
+                                      {order.status}
+                                    </Badge>
                                   </div>
                                 </div>
                               </div>
-                              <div className='text-right'>
-                                <div className='font-semibold text-sm'>
-                                  ₹{formatNumber(order.filledAmount)}
-                                </div>
-                                <div className='text-xs text-gray-500'>
-                                  Filled
-                                </div>
-                              </div>
-                            </div>
-                          ))
+                            ))
                         ) : (
                           <div className='text-center py-8 text-gray-500'>
                             <p>No trades found</p>
@@ -690,62 +797,68 @@ export default function Market() {
                           <div className='text-center py-8 text-gray-500'>
                             <DataLoading text='Loading order history...' />
                           </div>
-                        ) : orderHistory.length > 0 ? (
-                          orderHistory.map((order) => (
-                            <div
-                              key={order.id}
-                              className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
-                            >
-                              <div className='flex items-center space-x-3'>
-                                <div
-                                  className={`w-2 h-2 rounded-full ${
-                                    order.orderType === 'buy'
-                                      ? 'bg-green-500'
-                                      : 'bg-red-500'
-                                  }`}
-                                />
-                                <div>
-                                  <div className='font-medium text-sm'>
-                                    {order.company?.name || 'Unknown'} -{' '}
-                                    {order.orderType?.toUpperCase()}
+                        ) : orderHistory.filter(
+                            (order: any) => order.userID === user?.id
+                          ).length > 0 ? (
+                          orderHistory
+                            .filter((order: any) => order.userID === user?.id)
+                            .map((order) => (
+                              <div
+                                key={order.id}
+                                className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
+                              >
+                                <div className='flex items-center space-x-3'>
+                                  <div
+                                    className={`w-2 h-2 rounded-full ${
+                                      order.orderType === 'buy'
+                                        ? 'bg-green-500'
+                                        : 'bg-red-500'
+                                    }`}
+                                  />
+                                  <div>
+                                    <div className='font-medium text-sm'>
+                                      {order.company?.name || 'Unknown'} -{' '}
+                                      {order.orderType?.toUpperCase()}
+                                    </div>
+                                    <div className='text-sm text-gray-600'>
+                                      {order.quantity} @ ₹{order.pricePerUnit}
+                                    </div>
+                                    <div className='text-xs text-gray-500'>
+                                      {new Date(
+                                        order.createdAt
+                                      ).toLocaleString()}
+                                    </div>
                                   </div>
-                                  <div className='text-sm text-gray-600'>
-                                    {order.quantity} @ ₹{order.pricePerUnit}
-                                  </div>
-                                  <div className='text-xs text-gray-500'>
-                                    {new Date(order.createdAt).toLocaleString()}
+                                </div>
+                                <div className='text-right flex items-center space-x-2'>
+                                  <div>
+                                    <p className='font-medium text-sm'>
+                                      ₹{formatNumber(order.totalAmount)}
+                                    </p>
+                                    <Badge
+                                      variant={
+                                        order.status === 'filled'
+                                          ? 'default'
+                                          : order.status === 'partially_filled'
+                                          ? 'secondary'
+                                          : 'outline'
+                                      }
+                                      className={
+                                        order.status === 'pending'
+                                          ? 'bg-yellow-100 text-yellow-700'
+                                          : order.status === 'filled'
+                                          ? 'bg-green-100 text-green-700'
+                                          : order.status === 'partially_filled'
+                                          ? 'bg-blue-100 text-blue-700'
+                                          : ''
+                                      }
+                                    >
+                                      {order.status}
+                                    </Badge>
                                   </div>
                                 </div>
                               </div>
-                              <div className='text-right flex items-center space-x-2'>
-                                <div>
-                                  <p className='font-medium text-sm'>
-                                    ₹{formatNumber(order.totalAmount)}
-                                  </p>
-                                  <Badge
-                                    variant={
-                                      order.status === 'filled'
-                                        ? 'default'
-                                        : order.status === 'partially_filled'
-                                        ? 'secondary'
-                                        : 'outline'
-                                    }
-                                    className={
-                                      order.status === 'pending'
-                                        ? 'bg-yellow-100 text-yellow-700'
-                                        : order.status === 'filled'
-                                        ? 'bg-green-100 text-green-700'
-                                        : order.status === 'partially_filled'
-                                        ? 'bg-blue-100 text-blue-700'
-                                        : ''
-                                    }
-                                  >
-                                    {order.status}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                          ))
+                            ))
                         ) : (
                           <div className='text-center py-8 text-gray-500'>
                             <Clock className='h-8 w-8 mx-auto mb-2 text-gray-400' />
@@ -760,7 +873,7 @@ export default function Market() {
             </div>
 
             {/* Right Column - Trading Tools */}
-            <div className='space-y-8'>
+            <div className='space-y-4 sm:space-y-8'>
               {/* Place Order */}
               <Card>
                 <CardHeader>
@@ -769,13 +882,13 @@ export default function Market() {
                     Place Order
                   </CardTitle>
                 </CardHeader>
-                <CardContent className='space-y-4'>
+                <CardContent className='space-y-3 sm:space-y-4'>
                   {/* Buy/Sell Toggle */}
-                  <div className='flex space-x-2'>
+                  <div className='flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2'>
                     <Button
                       variant={orderType === 'buy' ? 'default' : 'outline'}
                       onClick={() => setOrderType('buy')}
-                      className={`flex-1 ${
+                      className={`flex-1 text-sm sm:text-base ${
                         orderType === 'buy'
                           ? 'bg-green-600 hover:bg-green-700 text-white'
                           : 'border-green-600 text-green-600 hover:bg-green-50'
@@ -787,7 +900,7 @@ export default function Market() {
                     <Button
                       variant={orderType === 'sell' ? 'default' : 'outline'}
                       onClick={() => setOrderType('sell')}
-                      className={`flex-1 ${
+                      className={`flex-1 text-sm sm:text-base ${
                         orderType === 'sell'
                           ? 'bg-red-600 hover:bg-red-700 text-white'
                           : 'border-red-600 text-red-600 hover:bg-red-50'
@@ -798,14 +911,22 @@ export default function Market() {
                     </Button>
                   </div>
 
-                  {/* Available Balance */}
+                  {/* Available Balance/Tokens */}
                   <div className='bg-blue-50 p-3 rounded-lg'>
                     <div className='flex justify-between items-center'>
                       <span className='text-sm text-gray-600'>
-                        Available Balance:
+                        {orderType === 'sell'
+                          ? 'Available Tokens:'
+                          : 'Available Balance:'}
                       </span>
                       <span className='text-lg font-semibold text-blue-600'>
-                        {walletLoading ? (
+                        {orderType === 'sell' ? (
+                          selectedCompanyId ? (
+                            `${getAvailableTokens(selectedCompanyId)} tokens`
+                          ) : (
+                            0
+                          )
+                        ) : walletLoading ? (
                           <span className='text-sm text-gray-500'>
                             Loading...
                           </span>
@@ -912,7 +1033,7 @@ export default function Market() {
               </Card>
 
               {/* Market Trades */}
-              {selectedCompany && (
+              {/* {selectedCompany && (
                 <Card>
                   <CardHeader>
                     <CardTitle className='flex items-center '>
@@ -954,11 +1075,12 @@ export default function Market() {
                     </div>
                   </CardContent>
                 </Card>
-              )}
+              )} */}
             </div>
           </div>
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }

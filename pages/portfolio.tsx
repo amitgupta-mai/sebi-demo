@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { TrendingUp, TrendingDown, Tag, Coins, Briefcase } from 'lucide-react';
 import { getUniqueCompanies } from '@/lib/utils';
 import { DataLoading } from '@/components/LoadingSpinner';
+import MobileNav from '@/components/MobileNav';
 
 interface PortfolioSummary {
   totalPortfolioValue: string;
@@ -232,7 +233,7 @@ export default function Portfolio() {
       <div className='flex'>
         <Sidebar />
 
-        <main className='flex-1 p-6'>
+        <main className='flex-1 p-4 sm:p-6 pb-20 lg:pb-6'>
           <div className='mb-8'>
             <h1 className='text-3xl font-bold text-gray-900 mb-2'>
               Portfolio Overview
@@ -264,7 +265,7 @@ export default function Portfolio() {
                   <div>
                     <div className='flex justify-between items-center mb-2'>
                       <span className='text-sm font-medium text-gray-700'>
-                        Real Shares
+                        Shares
                       </span>
                       <span className='text-sm text-gray-600'>
                         {formatCurrency(
@@ -398,7 +399,7 @@ export default function Portfolio() {
                               {holding.type === 'share' ? (
                                 <>
                                   <Tag className='mr-1 h-3 w-3' />
-                                  Real Share
+                                  Share
                                 </>
                               ) : (
                                 <>
@@ -480,6 +481,7 @@ export default function Portfolio() {
           </Card>
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }

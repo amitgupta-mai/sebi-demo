@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { DataLoading, TableLoading } from '@/components/LoadingSpinner';
+import MobileNav from '@/components/MobileNav';
 
 interface PortfolioSummary {
   totalPortfolioValue: string;
@@ -135,9 +136,9 @@ export default function Dashboard() {
       <div className='flex'>
         <Sidebar />
 
-        <main className='flex-1 p-6'>
+        <main className='flex-1 p-4 sm:p-6 pb-20 lg:pb-6'>
           {/* Portfolio Overview Cards */}
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8'>
             <Card>
               <CardContent className='p-6'>
                 <div className='flex items-center justify-between'>
@@ -154,10 +155,6 @@ export default function Dashboard() {
                             )
                           )}
                     </p>
-                    <p className='text-sm text-secondary mt-1'>
-                      <TrendingUp className='inline w-4 h-4 mr-1' />
-                      +8.5% from last month
-                    </p>
                   </div>
                   <div className='w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center'>
                     <ChartPie className='h-6 w-6 text-blue-600' />
@@ -170,9 +167,7 @@ export default function Dashboard() {
               <CardContent className='p-6'>
                 <div className='flex items-center justify-between'>
                   <div>
-                    <p className='text-sm font-medium text-gray-600'>
-                      Real Shares
-                    </p>
+                    <p className='text-sm font-medium text-gray-600'>Shares</p>
                     <p className='text-2xl font-bold text-gray-900'>
                       {summaryLoading
                         ? '...'
@@ -219,27 +214,6 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardContent className='p-6'>
-                <div className='flex items-center justify-between'>
-                  <div>
-                    <p className='text-sm font-medium text-gray-600'>
-                      Active Orders
-                    </p>
-                    <p className='text-2xl font-bold text-gray-900'>
-                      {summaryLoading ? '...' : '0'}
-                    </p>
-                    <p className='text-sm text-destructive mt-1'>
-                      Pending execution
-                    </p>
-                  </div>
-                  <div className='w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center'>
-                    <ArrowRightLeft className='h-6 w-6 text-red-600' />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Holdings Table */}
@@ -250,7 +224,7 @@ export default function Dashboard() {
           />
 
           {/* Recent Transactions */}
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8'>
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-6 sm:mt-8'>
             <Card>
               <CardContent className='p-6'>
                 <h3 className='text-lg font-semibold text-gray-900 mb-6'>
@@ -288,7 +262,9 @@ export default function Dashboard() {
                         </div>
                         <div className='text-right'>
                           <p className='text-sm font-medium text-gray-900'>
-                            {transaction.transactionType === 'tokenization'
+                            {transaction.transactionType === 'tokenization' ||
+                            transaction.transactionType === 'sell' ||
+                            transaction.transactionType === 'buy'
                               ? `${
                                   (transaction as any).metadata
                                     ?.tokenQuantity || transaction.quantity
@@ -347,19 +323,13 @@ export default function Dashboard() {
                       Convert to Shares
                     </Link>
                   </Button>
-
-                  <Button asChild variant='outline' className='w-full'>
-                    <Link href='/portfolio'>
-                      <TrendingUp className='mr-2 h-4 w-4' />
-                      View Full Portfolio
-                    </Link>
-                  </Button>
                 </div>
               </CardContent>
             </Card>
           </div>
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }

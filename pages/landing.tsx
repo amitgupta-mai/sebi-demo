@@ -71,8 +71,8 @@ export default function Landing() {
           </h2>
           <p className='text-xl text-gray-600 max-w-3xl mx-auto mb-8'>
             Tokenize your NSE-listed shares for enhanced liquidity and seamless
-            trading. Convert between real shares and tokens with complete
-            security and transparency.
+            trading. Convert between shares and tokens with complete security
+            and transparency.
           </p>
           <Button
             size='lg'
@@ -124,7 +124,8 @@ export default function Landing() {
             </CardHeader>
             <CardContent>
               <p className='text-gray-600'>
-                Convert tokens back to physical shares anytime with instant processing.
+                Convert tokens back to physical shares anytime with instant
+                processing.
               </p>
             </CardContent>
           </Card>

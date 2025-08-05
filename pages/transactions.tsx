@@ -26,6 +26,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { DataLoading } from '@/components/LoadingSpinner';
+import MobileNav from '@/components/MobileNav';
 
 export default function Transactions() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -78,7 +79,7 @@ export default function Transactions() {
     }
   };
 
-  const getTransactionLabel = (type: string) => {
+  const getTransactionLabel = (type: string, isShare = false) => {
     switch (type) {
       case 'tokenize':
       case 'tokenization':
@@ -86,9 +87,14 @@ export default function Transactions() {
       case 'detokenize':
         return 'Conversion';
       case 'buy':
+        if (isShare) {
+          return '';
+        }
         return 'Buy Order';
       case 'sell':
         return 'Sell Order';
+      case 'conversion':
+        return 'De-Tokenization';
       default:
         return 'Transaction';
     }
@@ -161,7 +167,7 @@ export default function Transactions() {
       <div className='flex'>
         <Sidebar />
 
-        <main className='flex-1 p-6'>
+        <main className='flex-1 p-4 sm:p-6 pb-20 lg:pb-6'>
           <div className='mb-8'>
             <h1 className='text-3xl font-bold text-gray-900 mb-2'>
               Transaction History
@@ -170,53 +176,6 @@ export default function Transactions() {
               Complete record of all your trading activities
             </p>
           </div>
-
-          {/* Filters */}
-          <Card className='mb-6'>
-            <CardContent className='p-6'>
-              <div className='flex flex-col md:flex-row gap-4'>
-                <div className='flex-1'>
-                  <div className='relative'>
-                    <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400' />
-                    <Input
-                      placeholder='Search by company name or symbol...'
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className='pl-10'
-                    />
-                  </div>
-                </div>
-
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger className='w-48'>
-                    <SelectValue placeholder='Filter by type' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='all'>All Transactions</SelectItem>
-                    <SelectItem value='tokenization'>Tokenization</SelectItem>
-                    <SelectItem value='detokenize'>Conversion</SelectItem>
-                    <SelectItem value='buy'>Buy Orders</SelectItem>
-                    <SelectItem value='sell'>Sell Orders</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className='w-48'>
-                    <SelectValue placeholder='Sort by' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='date'>Sort by Date</SelectItem>
-                    <SelectItem value='amount'>Sort by Amount</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Button variant='outline' className='whitespace-nowrap'>
-                  <Download className='h-4 w-4 mr-2' />
-                  Export
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Transactions List */}
           <Card>
@@ -281,14 +240,22 @@ export default function Transactions() {
                         </div>
 
                         <div className='flex items-center space-x-6'>
-                          <Badge
-                            className={getTransactionColor(
-                              transaction.transactionType
-                            )}
-                          >
-                            {getTransactionLabel(transaction.transactionType)}
-                          </Badge>
-
+                          {getTransactionLabel(
+                            transaction.transactionType,
+                            transaction.metadata?.source === 'share_purchase'
+                          ) ? (
+                            <Badge
+                              className={getTransactionColor(
+                                transaction.transactionType
+                              )}
+                            >
+                              {getTransactionLabel(
+                                transaction.transactionType,
+                                transaction.metadata?.source ===
+                                  'share_purchase'
+                              )}
+                            </Badge>
+                          ) : null}
                           <div className='text-right'>
                             <p className='font-semibold text-gray-900'>
                               {formatCurrency(
@@ -306,8 +273,11 @@ export default function Transactions() {
                         <div>
                           <p className='text-gray-500'>Quantity</p>
                           <p className='font-medium'>
-                            {transaction.transactionType === 'tokenization' ||
-                            transaction.transactionType === 'sell'
+                            {(transaction.transactionType === 'tokenization' ||
+                              transaction.transactionType === 'sell' ||
+                              transaction.transactionType === 'buy' ||
+                              transaction.transactionType === 'conversion') &&
+                            transaction.metadata?.source !== 'share_purchase'
                               ? `${
                                   transaction.metadata?.tokenQuantity ||
                                   transaction.quantity
@@ -396,6 +366,7 @@ export default function Transactions() {
           </Card>
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }

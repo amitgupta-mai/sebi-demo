@@ -90,6 +90,7 @@ export default function HoldingsTable({
         name: holding.companyName || holding.company?.name,
         symbol: holding.companySymbol || holding.company?.symbol,
         currentPrice: holding.currentPrice || holding.company?.currentPrice,
+        isinCode: holding?.isinCode || holding.company?.isinCode,
       },
       currentValue: (() => {
         const basePrice = parseFloat(
@@ -163,7 +164,7 @@ export default function HoldingsTable({
                 size='sm'
                 onClick={() => setFilter('shares')}
               >
-                Real Shares
+                Shares
               </Button>
               <Button
                 variant={filter === 'tokens' ? 'default' : 'outline'}
@@ -187,12 +188,16 @@ export default function HoldingsTable({
               <table className='holdings-table'>
                 <thead>
                   <tr>
-                    <th>Company</th>
-                    <th>Type</th>
-                    <th>Quantity</th>
-                    <th>Price</th>
-                    <th>Value</th>
-                    <th>Actions</th>
+                    <th className='text-xs sm:text-sm'>Company</th>
+                    <th className='text-xs sm:text-sm hidden sm:table-cell'>
+                      Type
+                    </th>
+                    <th className='text-xs sm:text-sm'>Qty</th>
+                    <th className='text-xs sm:text-sm hidden md:table-cell'>
+                      Price
+                    </th>
+                    <th className='text-xs sm:text-sm'>Value</th>
+                    <th className='text-xs sm:text-sm'>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -206,25 +211,28 @@ export default function HoldingsTable({
                           <div
                             className={`${getCompanyLogoClass(
                               item.company?.symbol || 'DEFAULT'
-                            )} mr-3`}
+                            )} mr-2 sm:mr-3`}
                           >
-                            <span>
+                            <span className='text-xs sm:text-sm'>
                               {(item.company?.symbol || 'N/A')
                                 .substring(0, 3)
                                 .toUpperCase()}
                             </span>
                           </div>
                           <div>
-                            <div className='text-sm font-medium text-gray-900'>
+                            <div className='text-xs sm:text-sm font-medium text-gray-900'>
                               {item.company?.name || 'Unknown Company'}
                             </div>
-                            <div className='text-sm text-gray-500'>
+                            <div className='text-xs sm:text-sm text-gray-500 hidden sm:block'>
                               NSE: {item.company?.symbol || 'N/A'}
+                            </div>
+                            <div className='text-xs sm:text-sm text-gray-500 hidden sm:block'>
+                              {item.company?.isinCode || 'N/A'}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td>
+                      <td className='hidden sm:table-cell'>
                         <Badge
                           variant={
                             item.type === 'share' ? 'default' : 'secondary'
@@ -238,7 +246,7 @@ export default function HoldingsTable({
                           {item.type === 'share' ? (
                             <>
                               <Tag className='mr-1 h-3 w-3' />
-                              Real Share
+                              Share
                             </>
                           ) : (
                             <>
@@ -248,11 +256,13 @@ export default function HoldingsTable({
                           )}
                         </Badge>
                       </td>
-                      <td className='text-sm text-gray-900'>{item.quantity}</td>
-                      <td className='text-sm text-gray-900'>
+                      <td className='text-xs sm:text-sm text-gray-900'>
+                        {item.quantity}
+                      </td>
+                      <td className='text-xs sm:text-sm text-gray-900 hidden md:table-cell'>
                         {formatCurrency(getDisplayPrice(item))}
                       </td>
-                      <td className='text-sm text-gray-900'>
+                      <td className='text-xs sm:text-sm text-gray-900'>
                         {formatCurrency(item.currentValue)}
                       </td>
 

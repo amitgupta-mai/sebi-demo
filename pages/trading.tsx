@@ -20,6 +20,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, TrendingDown, ArrowLeftRight } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { DataLoading } from '@/components/LoadingSpinner';
+import MobileNav from '@/components/MobileNav';
 
 export default function Trading() {
   const { toast } = useToast();
@@ -30,6 +31,7 @@ export default function Trading() {
   const [price, setPrice] = useState('');
   const [orderTypeSelect, setOrderTypeSelect] = useState<string>('limit');
 
+  // Fetch available tokens for user (for selling)
   const { data: availableTokensResponse, isLoading: tokensLoading } = useQuery<{
     success: boolean;
     message: string;
@@ -40,6 +42,7 @@ export default function Trading() {
     queryKey: ['/api/tokens/available'],
   });
 
+  // Fetch available market tokens for buy orders
   const {
     data: availableMarketTokensResponse,
     isLoading: marketTokensLoading,
@@ -71,7 +74,8 @@ export default function Trading() {
       statistics: any;
     };
   }>({
-    queryKey: ['/api/tokens/orders'],
+    queryKey: [`/api/tokens/orders${user?.id ? `?userId=${user?.id}` : ''}`],
+    enabled: !!user?.id,
   });
 
   const { data: portfolioSummaryResponse, isLoading: balanceLoading } =
@@ -94,7 +98,7 @@ export default function Trading() {
       queryKey: ['/api/portfolio/overview'],
     });
 
-  // Extract available tokens from API response based on selected tab
+  // Extract available tokens from API response based on order type
   const availableTokens =
     orderType === 'buy'
       ? availableMarketTokensResponse?.data?.orders || []
@@ -130,6 +134,7 @@ export default function Trading() {
       orderType: 'buy' | 'sell';
       quantity: number;
       pricePerToken: number;
+      executionType: string;
     }) => {
       const baseUrl =
         import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -139,6 +144,7 @@ export default function Trading() {
         companyId: data.companyId,
         quantity: data.quantity,
         pricePerToken: data.pricePerToken,
+        executionType: data.executionType,
       });
     },
     onSuccess: (data, variables) => {
@@ -308,12 +314,24 @@ export default function Trading() {
       return;
     }
 
-    orderMutation.mutate({
-      companyId: selectedCompanyId,
-      quantity: quantityNum,
-      orderType: orderType,
-      pricePerToken: priceNum,
-    });
+    orderMutation.mutate(
+      {
+        companyId: selectedCompanyId,
+        quantity: quantityNum,
+        orderType: orderType,
+        pricePerToken: priceNum,
+        executionType: orderTypeSelect,
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: [
+              `/api/tokens/orders${user?.id ? `?userId=${user?.id}` : ''}`,
+            ],
+          });
+        },
+      }
+    );
   };
 
   return (
@@ -323,23 +341,25 @@ export default function Trading() {
       <div className='flex'>
         <Sidebar />
 
-        <main className='flex-1 p-6'>
-          <div className='mb-8'>
-            <h1 className='text-3xl font-bold text-gray-900'>Token Trading</h1>
-            <p className='text-gray-600'>
+        <main className='flex-1 p-4 sm:p-6 pb-20 lg:pb-6'>
+          <div className='mb-6 sm:mb-8'>
+            <h1 className='text-2xl sm:text-3xl font-bold text-gray-900'>
+              Token Trading
+            </h1>
+            <p className='text-sm sm:text-base text-gray-600'>
               Trade tokenized shares with real-time pricing and advanced order
               management.
             </p>
           </div>
 
-          <div className='grid grid-cols-1 xl:grid-cols-3 gap-6'>
+          <div className='grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6'>
             {/* Place Order Section - Left Column */}
-            <div className='xl:col-span-1'>
+            <div className='lg:col-span-1'>
               <Card>
                 <CardHeader>
                   <CardTitle>Place Order</CardTitle>
                 </CardHeader>
-                <CardContent className='space-y-4'>
+                <CardContent className='space-y-3 sm:space-y-4'>
                   <Tabs
                     value={orderType}
                     onValueChange={(value) =>
@@ -372,7 +392,6 @@ export default function Trading() {
                     </TabsList>
                   </Tabs>
 
-                  {/* Balance Display */}
                   {!balanceLoading && (
                     <div className='bg-blue-50 p-3 rounded-lg'>
                       <div className='flex justify-between items-center'>
@@ -415,15 +434,14 @@ export default function Trading() {
                                       {company?.name} ({company?.symbol})
                                     </span>
                                     <span className='text-xs text-gray-500'>
-                                      ₹
                                       {formatCurrency(
                                         parseFloat(company?.currentPrice || 0)
                                       )}
                                     </span>
                                   </div>
-                                  <span className='text-xs text-green-600 font-medium'>
+                                  {/* <span className='text-xs text-green-600 font-medium'>
                                     {availableQuantity} available
-                                  </span>
+                                  </span> */}
                                 </div>
                               </SelectItem>
                             );
@@ -666,7 +684,7 @@ export default function Trading() {
             </div>
 
             {/* Right Column */}
-            <div className='xl:col-span-2 space-y-6'>
+            <div className='lg:col-span-2 space-y-4 sm:space-y-6'>
               {/* Market Overview Section */}
               <Card>
                 <CardHeader>
@@ -674,7 +692,7 @@ export default function Trading() {
                 </CardHeader>
                 <CardContent>
                   {tokensLoading || companiesLoading ? (
-                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4'>
                       {[1, 2, 3, 4, 5, 6].map((index) => (
                         <div
                           key={index}
@@ -695,7 +713,7 @@ export default function Trading() {
                       ))}
                     </div>
                   ) : (
-                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4'>
                       {companies && companies.length > 0 ? (
                         companies.map((company: any) => (
                           <div
@@ -787,8 +805,7 @@ export default function Trading() {
                                 {order?.orderType?.toUpperCase()}
                               </p>
                               <p className='text-sm text-gray-600'>
-                                {order?.remainingQuantity} @ ₹
-                                {order?.pricePerUnit}
+                                {order?.quantity} @ ₹{order?.pricePerUnit}
                               </p>
                             </div>
                           </div>
@@ -813,20 +830,6 @@ export default function Trading() {
                                 {order?.status}
                               </Badge>
                             </div>
-                            {(order?.status === 'pending' ||
-                              order?.status === 'partially_filled') && (
-                              <Button
-                                size='sm'
-                                variant='outline'
-                                onClick={() =>
-                                  cancelOrderMutation.mutate(order.id)
-                                }
-                                disabled={cancelOrderMutation.isPending}
-                                className='text-red-600 hover:text-red-700'
-                              >
-                                Cancel
-                              </Button>
-                            )}
                           </div>
                         </div>
                       ))}
@@ -843,6 +846,7 @@ export default function Trading() {
           </div>
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }

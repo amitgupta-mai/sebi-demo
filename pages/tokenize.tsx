@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Coins, Calculator, AlertCircle } from 'lucide-react';
 import { DataLoading } from '@/components/LoadingSpinner';
+import MobileNav from '@/components/MobileNav';
 
 export default function Tokenize() {
   const { toast } = useToast();
@@ -186,7 +187,7 @@ export default function Tokenize() {
       <div className='flex'>
         <Sidebar />
 
-        <main className='flex-1 p-6'>
+        <main className='flex-1 p-4 sm:p-6 pb-20 lg:pb-6'>
           <div className='max-w-2xl mx-auto'>
             <div className='mb-8'>
               <h1 className='text-3xl font-bold text-gray-900 mb-2'>
@@ -285,31 +286,6 @@ export default function Tokenize() {
                                   </SelectItem>
                                 );
                               })}
-                            </>
-                          )}
-
-                          {/* Companies without shares - disabled */}
-                          {companiesWithoutShares.length > 0 && (
-                            <>
-                              <div className='px-2 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide'>
-                                Other companies
-                              </div>
-                              {companiesWithoutShares.map((company: any) => (
-                                <SelectItem
-                                  key={company.id}
-                                  value={company.id}
-                                  disabled
-                                >
-                                  <div className='flex items-center justify-between w-full opacity-50'>
-                                    <span>
-                                      {company.name} ({company.symbol})
-                                    </span>
-                                    <span className='text-xs text-gray-400'>
-                                      No shares
-                                    </span>
-                                  </div>
-                                </SelectItem>
-                              ))}
                             </>
                           )}
                         </>
@@ -488,6 +464,7 @@ export default function Tokenize() {
           </div>
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }
