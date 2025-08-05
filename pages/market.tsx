@@ -157,14 +157,13 @@ export default function Market() {
       });
       setQuantity('');
       setPrice('');
+      // Keep selectedCompanyId unchanged - don't reset company selection
 
       // Invalidate queries
       queryClient.invalidateQueries({
         queryKey: [
           `/api/tokens/orders${
-            selectedCompanyId
-              ? `${user?.id ? '&' : '?'}companyId=${selectedCompanyId}`
-              : ''
+            selectedCompanyId ? `?companyId=${selectedCompanyId}` : ''
           }`,
         ],
       });
@@ -174,6 +173,10 @@ export default function Market() {
       queryClient.invalidateQueries({ queryKey: ['/api/tokens/available'] });
       queryClient.invalidateQueries({ queryKey: ['/api/tokens/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/portfolio/overview'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/transactions/available-tokens'],
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
     },
     onError: (error: any) => {
       toast({
@@ -635,51 +638,47 @@ export default function Market() {
                           <div className='text-center py-8 text-gray-500'>
                             <DataLoading text='Loading orders...' />
                           </div>
-                        ) : openOrders.filter(
-                            (order: any) => order.userId === user?.id
-                          ).length > 0 ? (
-                          openOrders
-                            .filter((order: any) => order.userId === user?.id)
-                            .map((order: any) => (
-                              <div
-                                key={order.id}
-                                className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
-                              >
-                                <div className='flex items-center space-x-3'>
-                                  <div
-                                    className={`w-2 h-2 rounded-full ${
-                                      order.orderType === 'buy'
-                                        ? 'bg-green-500'
-                                        : 'bg-red-500'
-                                    }`}
-                                  />
-                                  <div>
-                                    <div className='font-medium text-sm'>
-                                      {order.company?.name || 'Unknown'} -{' '}
-                                      {order.orderType?.toUpperCase()}
-                                    </div>
-                                    <div className='text-sm text-gray-600'>
-                                      {order.remainingQuantity} @ ₹
-                                      {order.pricePerUnit}
-                                    </div>
+                        ) : openOrders.length > 0 ? (
+                          openOrders.map((order: any) => (
+                            <div
+                              key={order.id}
+                              className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
+                            >
+                              <div className='flex items-center space-x-3'>
+                                <div
+                                  className={`w-2 h-2 rounded-full ${
+                                    order.orderType === 'buy'
+                                      ? 'bg-green-500'
+                                      : 'bg-red-500'
+                                  }`}
+                                />
+                                <div>
+                                  <div className='font-medium text-sm'>
+                                    {order.company?.name || 'Unknown'} -{' '}
+                                    {order.orderType?.toUpperCase()}
+                                  </div>
+                                  <div className='text-sm text-gray-600'>
+                                    {order.remainingQuantity} @ ₹
+                                    {order.pricePerUnit}
                                   </div>
                                 </div>
-                                <div className='text-right flex items-center space-x-2'>
-                                  <Badge
-                                    variant='secondary'
-                                    className={
-                                      order.status === 'pending'
-                                        ? 'bg-yellow-100 text-yellow-700'
-                                        : order.status === 'filled'
-                                        ? 'bg-green-100 text-green-700'
-                                        : order.status === 'partially_filled'
-                                        ? 'bg-blue-100 text-blue-700'
-                                        : ''
-                                    }
-                                  >
-                                    {order.status}
-                                  </Badge>
-                                  {/* <Button
+                              </div>
+                              <div className='text-right flex items-center space-x-2'>
+                                <Badge
+                                  variant='secondary'
+                                  className={
+                                    order.status === 'pending'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : order.status === 'filled'
+                                      ? 'bg-green-100 text-green-700'
+                                      : order.status === 'partially_filled'
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : ''
+                                  }
+                                >
+                                  {order.status}
+                                </Badge>
+                                {/* <Button
                                   size='sm'
                                   variant='outline'
                                   onClick={() =>
@@ -690,9 +689,9 @@ export default function Market() {
                                 >
                                   Cancel
                                 </Button> */}
-                                </div>
                               </div>
-                            ))
+                            </div>
+                          ))
                         ) : (
                           <div className='text-center py-8 text-gray-500'>
                             <p>No open orders</p>
@@ -707,61 +706,57 @@ export default function Market() {
                           <div className='text-center py-8 text-gray-500'>
                             <DataLoading text='Loading trades...' />
                           </div>
-                        ) : tradeHistory.filter(
-                            (order: any) => order.userId === user?.id
-                          ).length > 0 ? (
-                          tradeHistory
-                            .filter((order: any) => order.userId === user?.id)
-                            .map((order) => (
-                              <div
-                                key={order.id}
-                                className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
-                              >
-                                <div className='flex items-center space-x-3'>
-                                  <div
-                                    className={`p-1 rounded ${
-                                      order.orderType === 'buy'
-                                        ? 'bg-green-100 text-green-600'
-                                        : 'bg-red-100 text-red-600'
-                                    }`}
-                                  >
-                                    {order.orderType === 'buy' ? (
-                                      <TrendingUp className='h-3 w-3' />
-                                    ) : (
-                                      <TrendingDown className='h-3 w-3' />
-                                    )}
-                                  </div>
-                                  <div>
-                                    <div className='font-medium text-sm'>
-                                      {order.company?.name || 'Unknown'} -{' '}
-                                      {order.orderType?.toUpperCase()}
-                                    </div>
-                                    <div className='text-sm text-gray-600'>
-                                      {order.filledQuantity} @ ₹
-                                      {order.pricePerUnit}
-                                    </div>
-                                    <div className='text-xs text-gray-500'>
-                                      {new Date(
-                                        order.updatedAt
-                                      ).toLocaleTimeString()}
-                                    </div>
-                                  </div>
+                        ) : tradeHistory.length > 0 ? (
+                          tradeHistory.map((order) => (
+                            <div
+                              key={order.id}
+                              className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
+                            >
+                              <div className='flex items-center space-x-3'>
+                                <div
+                                  className={`p-1 rounded ${
+                                    order.orderType === 'buy'
+                                      ? 'bg-green-100 text-green-600'
+                                      : 'bg-red-100 text-red-600'
+                                  }`}
+                                >
+                                  {order.orderType === 'buy' ? (
+                                    <TrendingUp className='h-3 w-3' />
+                                  ) : (
+                                    <TrendingDown className='h-3 w-3' />
+                                  )}
                                 </div>
-                                <div className='text-right'>
-                                  <div className='font-semibold text-sm'>
-                                    ₹{formatNumber(order.filledAmount)}
+                                <div>
+                                  <div className='font-medium text-sm'>
+                                    {order.company?.name || 'Unknown'} -{' '}
+                                    {order.orderType?.toUpperCase()}
+                                  </div>
+                                  <div className='text-sm text-gray-600'>
+                                    {order.filledQuantity} @ ₹
+                                    {order.pricePerUnit}
                                   </div>
                                   <div className='text-xs text-gray-500'>
-                                    <Badge
-                                      variant='secondary'
-                                      className='bg-green-100 text-green-700'
-                                    >
-                                      {order.status}
-                                    </Badge>
+                                    {new Date(
+                                      order.updatedAt
+                                    ).toLocaleTimeString()}
                                   </div>
                                 </div>
                               </div>
-                            ))
+                              <div className='text-right'>
+                                <div className='font-semibold text-sm'>
+                                  ₹{formatNumber(order.filledAmount)}
+                                </div>
+                                <div className='text-xs text-gray-500'>
+                                  <Badge
+                                    variant='secondary'
+                                    className='bg-green-100 text-green-700'
+                                  >
+                                    {order.status}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          ))
                         ) : (
                           <div className='text-center py-8 text-gray-500'>
                             <p>No trades found</p>
@@ -776,68 +771,62 @@ export default function Market() {
                           <div className='text-center py-8 text-gray-500'>
                             <DataLoading text='Loading order history...' />
                           </div>
-                        ) : orderHistory.filter(
-                            (order: any) => order.userId === user?.id
-                          ).length > 0 ? (
-                          orderHistory
-                            .filter((order: any) => order.userId === user?.id)
-                            .map((order) => (
-                              <div
-                                key={order.id}
-                                className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
-                              >
-                                <div className='flex items-center space-x-3'>
-                                  <div
-                                    className={`w-2 h-2 rounded-full ${
-                                      order.orderType === 'buy'
-                                        ? 'bg-green-500'
-                                        : 'bg-red-500'
-                                    }`}
-                                  />
-                                  <div>
-                                    <div className='font-medium text-sm'>
-                                      {order.company?.name || 'Unknown'} -{' '}
-                                      {order.orderType?.toUpperCase()}
-                                    </div>
-                                    <div className='text-sm text-gray-600'>
-                                      {order.quantity} @ ₹{order.pricePerUnit}
-                                    </div>
-                                    <div className='text-xs text-gray-500'>
-                                      {new Date(
-                                        order.createdAt
-                                      ).toLocaleString()}
-                                    </div>
+                        ) : orderHistory.length > 0 ? (
+                          orderHistory.map((order) => (
+                            <div
+                              key={order.id}
+                              className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'
+                            >
+                              <div className='flex items-center space-x-3'>
+                                <div
+                                  className={`w-2 h-2 rounded-full ${
+                                    order.orderType === 'buy'
+                                      ? 'bg-green-500'
+                                      : 'bg-red-500'
+                                  }`}
+                                />
+                                <div>
+                                  <div className='font-medium text-sm'>
+                                    {order.company?.name || 'Unknown'} -{' '}
+                                    {order.orderType?.toUpperCase()}
                                   </div>
-                                </div>
-                                <div className='text-right flex items-center space-x-2'>
-                                  <div>
-                                    <p className='font-medium text-sm'>
-                                      ₹{formatNumber(order.totalAmount)}
-                                    </p>
-                                    <Badge
-                                      variant={
-                                        order.status === 'filled'
-                                          ? 'default'
-                                          : order.status === 'partially_filled'
-                                          ? 'secondary'
-                                          : 'outline'
-                                      }
-                                      className={
-                                        order.status === 'pending'
-                                          ? 'bg-yellow-100 text-yellow-700'
-                                          : order.status === 'filled'
-                                          ? 'bg-green-100 text-green-700'
-                                          : order.status === 'partially_filled'
-                                          ? 'bg-blue-100 text-blue-700'
-                                          : ''
-                                      }
-                                    >
-                                      {order.status}
-                                    </Badge>
+                                  <div className='text-sm text-gray-600'>
+                                    {order.quantity} @ ₹{order.pricePerUnit}
+                                  </div>
+                                  <div className='text-xs text-gray-500'>
+                                    {new Date(order.createdAt).toLocaleString()}
                                   </div>
                                 </div>
                               </div>
-                            ))
+                              <div className='text-right flex items-center space-x-2'>
+                                <div>
+                                  <p className='font-medium text-sm'>
+                                    ₹{formatNumber(order.totalAmount)}
+                                  </p>
+                                  <Badge
+                                    variant={
+                                      order.status === 'filled'
+                                        ? 'default'
+                                        : order.status === 'partially_filled'
+                                        ? 'secondary'
+                                        : 'outline'
+                                    }
+                                    className={
+                                      order.status === 'pending'
+                                        ? 'bg-yellow-100 text-yellow-700'
+                                        : order.status === 'filled'
+                                        ? 'bg-green-100 text-green-700'
+                                        : order.status === 'partially_filled'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : ''
+                                    }
+                                  >
+                                    {order.status}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          ))
                         ) : (
                           <div className='text-center py-8 text-gray-500'>
                             <Clock className='h-8 w-8 mx-auto mb-2 text-gray-400' />
