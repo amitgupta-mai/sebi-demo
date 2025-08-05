@@ -197,7 +197,6 @@ export default function HoldingsTable({
                       Price
                     </th>
                     <th className='text-xs sm:text-sm'>Value</th>
-                    <th className='text-xs sm:text-sm'>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -264,41 +263,6 @@ export default function HoldingsTable({
                       </td>
                       <td className='text-xs sm:text-sm text-gray-900'>
                         {formatCurrency(item.currentValue)}
-                      </td>
-
-                      <td>
-                        <div className='flex space-x-2'>
-                          {item.type === 'share' ? (
-                            <>
-                              <Button
-                                variant='link'
-                                size='sm'
-                                onClick={() => handleTokenize(item)}
-                                className='text-primary hover:text-blue-700 p-0 h-auto font-medium'
-                              >
-                                Tokenize
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                variant='link'
-                                size='sm'
-                                onClick={() => handleConvert(item)}
-                                className='text-orange-600 hover:text-orange-700 p-0 h-auto font-medium'
-                              >
-                                Convert
-                              </Button>
-                              <Button
-                                variant='link'
-                                size='sm'
-                                className='text-red-600 hover:text-red-700 p-0 h-auto font-medium'
-                              >
-                                Sell
-                              </Button>
-                            </>
-                          )}
-                        </div>
                       </td>
                     </tr>
                   ))}
