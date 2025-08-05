@@ -129,6 +129,17 @@
   @apply bg-red-100 text-red-800;
 }
 
+/* Remove number input spinners */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 /* Company logo placeholders */
 .company-logo {
   @apply w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold text-white;

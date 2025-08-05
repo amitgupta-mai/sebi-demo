@@ -657,10 +657,10 @@ export default function Market() {
                             <DataLoading text='Loading orders...' />
                           </div>
                         ) : openOrders.filter(
-                            (order: any) => order.userID === user?.id
+                            (order: any) => order.userId === user?.id
                           ).length > 0 ? (
                           openOrders
-                            .filter((order: any) => order.userID === user?.id)
+                            .filter((order: any) => order.userId === user?.id)
                             .map((order: any) => (
                               <div
                                 key={order.id}
@@ -729,10 +729,10 @@ export default function Market() {
                             <DataLoading text='Loading trades...' />
                           </div>
                         ) : tradeHistory.filter(
-                            (order: any) => order.userID === user?.id
+                            (order: any) => order.userId === user?.id
                           ).length > 0 ? (
                           tradeHistory
-                            .filter((order: any) => order.userID === user?.id)
+                            .filter((order: any) => order.userId === user?.id)
                             .map((order) => (
                               <div
                                 key={order.id}
@@ -798,10 +798,10 @@ export default function Market() {
                             <DataLoading text='Loading order history...' />
                           </div>
                         ) : orderHistory.filter(
-                            (order: any) => order.userID === user?.id
+                            (order: any) => order.userId === user?.id
                           ).length > 0 ? (
                           orderHistory
-                            .filter((order: any) => order.userID === user?.id)
+                            .filter((order: any) => order.userId === user?.id)
                             .map((order) => (
                               <div
                                 key={order.id}
