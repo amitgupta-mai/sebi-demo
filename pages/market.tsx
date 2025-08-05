@@ -445,9 +445,6 @@ export default function Market() {
                         </SelectItem>
                       ) : companies && companies.length > 0 ? (
                         companies.map((company: any) => {
-                          const availableQuantity = getAvailableTokens(
-                            company.id
-                          );
                           return (
                             <SelectItem key={company?.id} value={company?.id}>
                               <div className='flex items-center justify-between w-full'>

@@ -156,9 +156,9 @@ export default function Trading() {
         title: 'Success',
         description: `${userName} ${action} ${quantity} tokens successfully!`,
       });
-      setSelectedCompanyId('');
       setQuantity('');
       setPrice('');
+      // Keep selectedCompanyId unchanged - don't reset company selection
 
       // Invalidate orders query
       queryClient.invalidateQueries({ queryKey: ['/api/tokens/orders'] });
