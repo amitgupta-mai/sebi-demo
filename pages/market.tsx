@@ -109,6 +109,26 @@ export default function Market() {
     queryKey: ['/api/wallet'],
   });
 
+  // Fetch user orders for order management
+  const { data: orderManagementResponse, isLoading: orderManagementLoading } =
+    useQuery<{
+      success: boolean;
+      message: string;
+      data: {
+        orders: any[];
+        statistics: any;
+      };
+    }>({
+      queryKey: [
+        `/api/tokens/orders${user?.id ? `?userId=${user.id}` : ''}${
+          selectedCompanyId
+            ? `${user?.id ? '&' : '?'}companyId=${selectedCompanyId}`
+            : ''
+        }`,
+      ],
+      enabled: !!user?.id,
+    });
+
   // Fetch user orders
   const { data: ordersResponse, isLoading: ordersLoading } = useQuery<{
     success: boolean;
@@ -160,6 +180,15 @@ export default function Market() {
       // Keep selectedCompanyId unchanged - don't reset company selection
 
       // Invalidate queries
+      queryClient.invalidateQueries({
+        queryKey: [
+          `/api/tokens/orders${user?.id ? `?userId=${user.id}` : ''}${
+            selectedCompanyId
+              ? `${user?.id ? '&' : '?'}companyId=${selectedCompanyId}`
+              : ''
+          }`,
+        ],
+      });
       queryClient.invalidateQueries({
         queryKey: [
           `/api/tokens/orders${
@@ -329,17 +358,17 @@ export default function Market() {
     (c: any) => c.id === selectedCompanyId
   );
 
-  // Get real orders from API response
-  const realOrders = ordersResponse?.data?.orders || [];
+  // Get real orders from API response for order management
+  const orderManagementOrders = orderManagementResponse?.data?.orders || [];
 
   // Filter orders based on status for different tabs
-  const openOrders = realOrders.filter(
+  const openOrders = orderManagementOrders.filter(
     (order: any) => order.status === 'pending'
   );
 
-  const orderHistory = realOrders; // All orders for order history
+  const orderHistory = orderManagementOrders; // All orders for order history
 
-  const tradeHistory = realOrders.filter(
+  const tradeHistory = orderManagementOrders.filter(
     (order: any) => order.status === 'filled'
   );
 
@@ -634,7 +663,7 @@ export default function Market() {
 
                     <TabsContent value='open-orders' className='mt-4'>
                       <div className='space-y-3 max-h-64 overflow-y-auto'>
-                        {ordersLoading ? (
+                        {orderManagementLoading ? (
                           <div className='text-center py-8 text-gray-500'>
                             <DataLoading text='Loading orders...' />
                           </div>
@@ -702,7 +731,7 @@ export default function Market() {
 
                     <TabsContent value='trades' className='mt-4'>
                       <div className='space-y-3 max-h-64 overflow-y-auto'>
-                        {ordersLoading ? (
+                        {orderManagementLoading ? (
                           <div className='text-center py-8 text-gray-500'>
                             <DataLoading text='Loading trades...' />
                           </div>
@@ -767,7 +796,7 @@ export default function Market() {
 
                     <TabsContent value='order-history' className='mt-4'>
                       <div className='space-y-3 max-h-64 overflow-y-auto'>
-                        {ordersLoading ? (
+                        {orderManagementLoading ? (
                           <div className='text-center py-8 text-gray-500'>
                             <DataLoading text='Loading order history...' />
                           </div>
