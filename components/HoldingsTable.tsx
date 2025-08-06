@@ -262,7 +262,7 @@ export default function HoldingsTable({
                         {formatCurrency(getDisplayPrice(item))}
                       </td>
                       <td className='text-xs sm:text-sm text-gray-900'>
-                        {formatCurrency(item.currentValue)}
+                        {formatCurrency(item.totalValue)}
                       </td>
                     </tr>
                   ))}
